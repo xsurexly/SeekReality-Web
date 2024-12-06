@@ -16,7 +16,6 @@
 
     <!-- 登录后显示主页面 -->
     <div v-else class="main-content">
-        <h1>主界面</h1>
       <router-view></router-view>
     </div>
   </div>
