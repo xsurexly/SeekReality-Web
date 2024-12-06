@@ -1,6 +1,6 @@
 <template>
   <div class="register-container">
-    <h1>注册新用户</h1>
+    <h1>新用户注册</h1>
     <form @submit.prevent="register">
       <label for="username">用户名：</label>
       <input type="text" v-model="username" id="username" placeholder="请输入用户名" required><br>

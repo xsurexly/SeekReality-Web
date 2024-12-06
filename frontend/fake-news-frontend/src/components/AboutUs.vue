@@ -1,8 +1,5 @@
 <template>
   <div class="aboutUs-container">
-    <!-- Navbar组件将在这里渲染 -->
-    <Navbar/>
-
     <div class="content">
       <!-- 路由视图，用于显示匹配的组件 -->
       <router-view></router-view>

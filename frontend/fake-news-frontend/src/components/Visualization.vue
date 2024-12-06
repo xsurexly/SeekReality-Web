@@ -5,7 +5,7 @@
       <router-view></router-view>
     </div>
 
-    <h1>这里是个人资料</h1>
+    <h1>这里是可视化</h1>
     <p>欢迎！！！！</p>
   </div>
 </template>
@@ -17,7 +17,7 @@ export default {
   components: {
     Navbar
   },
-  name: 'Profile'
+  name: 'Visualization'
 };
 </script>
 

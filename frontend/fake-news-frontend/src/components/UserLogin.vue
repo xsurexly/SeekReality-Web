@@ -67,6 +67,7 @@ export default {
   margin-bottom: 20px;
   color: #2e7d32; /* 深绿色标题 */
   font-size: 1.8rem;
+
 }
 
 /* 表单标签样式 */

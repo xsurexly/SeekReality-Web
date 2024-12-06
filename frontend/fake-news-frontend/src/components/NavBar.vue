@@ -1,6 +1,10 @@
 <template>
   <nav class="navbar">
     <ul class="nav-links">
+      <li><router-link to="/mainPage/visualization">可视化</router-link></li>
+      <li><router-link to="/mainPage/textdetect">文本检测</router-link></li>
+      <li><router-link to="/mainPage/newspage">新闻</router-link></li>
+      <li><router-link to="/mainPage/aiassist">AI助手</router-link></li>
       <li><router-link to="/mainPage/profile">个人资料</router-link></li>
       <li><router-link to="/mainPage/settings">设置</router-link></li>
       <li><router-link to="/mainPage/about">关于</router-link></li>
@@ -22,31 +26,23 @@ export default {
 
 <style scoped>
 .navbar {
-  background-color: #333;
-  min-height: 100vh; /* 使navbar高度占满整个视口高度 */
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
 }
 
 .nav-links {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  list-style-type: none;
   display: flex;
-  flex-direction: column; /* 垂直排列链接 */
-  align-items: flex-start; /* 靠左对齐 */
+  gap: 15px;
 }
 
-.nav-links li {
-  padding: 14px;
-}
-
-.nav-links li a {
-  text-decoration: none;
+.nav-links a {
   color: white;
-  display: block;
+  text-decoration: none;
 }
 
-.nav-links li a:hover {
-  background-color: #ddd;
-  color: black;
+.nav-links a:hover {
+  text-decoration: underline;
 }
 </style>
