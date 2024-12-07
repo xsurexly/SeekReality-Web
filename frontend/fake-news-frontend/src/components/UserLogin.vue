@@ -8,6 +8,10 @@
       <input type="password" v-model="password" id="password" placeholder="请输入密码" required>
       <input type="submit" value="登录">
     </form>
+    <p>
+      还没有账号？
+      <router-link to="/userRegister" class="register-link">点击注册</router-link>
+    </p>
   </div>
 </template>
 
@@ -50,16 +54,19 @@ export default {
 </script>
 
 <style scoped>
+
 /* 登录容器样式 */
 .login-container {
+
   font-family: 'Arial', sans-serif;
   background-color: #e8f5e9; /* 浅绿色背景 */
   width: 350px;
-  margin: 50px auto;
+  margin: 0px auto;
   padding: 25px;
   border-radius: 10px;
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
+  align-items: center
 }
 
 /* 标题样式 */
@@ -112,6 +119,16 @@ input[type="submit"] {
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
+}
+
+.register-link {
+  color: #388e3c;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.register-link:hover {
+  text-decoration: underline;
 }
 
 /* 按钮悬停效果 */

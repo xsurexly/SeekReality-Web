@@ -12,6 +12,7 @@
       <input type="email" v-model="email" id="email" placeholder="请输入邮箱"><br>
       <input type="submit" value="注册">
     </form>
+
   </div>
 </template>
 
@@ -58,17 +59,19 @@ export default {
   }
 };
 </script>
+
 <style>
 .register-container {
   font-family: 'Roboto', sans-serif;
   background-color: #e8f5e9;
   color: #2e7d32;
   width: 350px;
-  margin: 50px auto;
+  margin: 0px auto;
   padding: 25px;
   border-radius: 10px;
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
+
 }
 .register-container h1 {
   margin-bottom: 20px;
@@ -118,4 +121,5 @@ input[type="submit"]:hover {
 input[type="submit"]:active {
   background-color: #388e3c;
 }
+
 </style>

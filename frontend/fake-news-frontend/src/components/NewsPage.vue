@@ -24,7 +24,7 @@ export default {
 <style>
 .aboutUs-container {
   font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  background-color: white;
   display: flex; /* 使用Flexbox布局 */
   min-height: 100vh; /* 使容器高度占满整个视口高度 */
 }
