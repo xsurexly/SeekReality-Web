@@ -5,19 +5,19 @@
       <router-view></router-view>
     </div>
 
-    <h1>这里是关于我们</h1>
+    <h1>这里是新闻界面</h1>
     <p>欢迎！！！！</p>
   </div>
 </template>
 
 <script>
-import Navbar from './NavBar.vue'; // 确保路径正确
+
 
 export default {
   components: {
-    Navbar
+
   },
-  name: 'AboutUs'
+  name: 'NewsPage'
 };
 </script>
 

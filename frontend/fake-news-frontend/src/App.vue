@@ -1,34 +1,37 @@
 <template>
-  <div :class="isLoginPage ? 'login-background' : ''">
-    <router-view /> <!-- 根据路由动态加载页面 -->
+  <div id="app">
+    <Navbar v-if="$route.meta.keepAlive"></Navbar>
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
-export default {
-  name: 'App',
-  computed: {
-    isLoginPage() {
-      // 判断当前路由是否为登录页或注册页
-      return this.$route.path === '/' || this.$route.path === '/userRegister';
-    }
-  }
-};
+import Navbar from './components/Navbar.vue'
+
+export default  {
+  name:  'App',
+  components: {
+    Navbar
+    },
+    metaInfo() {
+        return {
+            title: "虚假新闻检测系统",
+            titleTemplate: "虚假新闻检测系统"
+        }
+    },
+}
 </script>
 
 <style>
-/* 全局样式重置 */
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
+.app-container {
+  display: flex;
+  flex-direction: row; /* 左右排列 */
+  height: 100vh; /* 使用视口高度 */
+}
+.router-view {
+  flex: 1; /* 让路由视图占满剩余空间 */
+  padding: 20px;
+  text-align: center;
 }
 
-/* 登录页的背景样式 */
-.login-background {
-  padding-top:200px;
-  height: 100vh;
-  background: url('@/assets/pic.jpg') no-repeat center center fixed;
-  background-size: cover;
-}
 </style>
-

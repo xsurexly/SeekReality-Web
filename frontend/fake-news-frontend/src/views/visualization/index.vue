@@ -5,19 +5,17 @@
       <router-view></router-view>
     </div>
 
-    <h1>这里是文本检测</h1>
+    <h1>这里是可视化</h1>
     <p>欢迎！！！！</p>
   </div>
 </template>
 
 <script>
-import Navbar from './NavBar.vue'; // 确保路径正确
 
 export default {
   components: {
-    Navbar
   },
-  name: 'TextDetect'
+  name: 'Visualization'
 };
 </script>
 

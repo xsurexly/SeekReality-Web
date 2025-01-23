@@ -1,29 +1,29 @@
-from flask import Flask, request, jsonify
+from flask import Flask
 from flask_cors import CORS
-import os
-from auth import register_user, login_user  # 引入auth.py中的函数
+from config import Config
+from models import db
+from routes.auth import auth_bp
+from routes.profile import profile_bp
+from routes.detect import detect_bp
+from routes.history import history_bp
 
+# 创建 Flask 应用
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:8080"}})
+app.config.from_object(Config)
 
-@app.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    email = data.get('email')
+# 初始化数据库
+db.init_app(app)
 
-    # 调用auth.py中的register_user函数
-    return register_user(username, password, email)
+# 注册蓝图
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(profile_bp, url_prefix='/profile')
+app.register_blueprint(detect_bp, url_prefix='/api')
+app.register_blueprint(history_bp, url_prefix='/api')
 
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    # 调用auth.py中的login_user函数
-    return login_user(username, password)
+# 数据库初始化和表创建（如果没有表时）
+@app.before_first_request
+def create_tables():
+    db.create_all()
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

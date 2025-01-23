@@ -1,45 +1,73 @@
-import { createRouter, createWebHistory } from 'vue-router';
-
-import UserLogin from '../components/UserLogin.vue';
-import UserRegister from '../components/UserRegister.vue';
-import MainPage from '../components/MainPage.vue';
-import Visualization from '../components/Visualization.vue';
-import TextDetect from '../components/TextDetect.vue';
-import NewsPage from '../components/NewsPage.vue';
-import AIAssist from '../components/AIAssist.vue';
-import AboutUs from '../components/AboutUs.vue';
-import Profile from '../components/Profile.vue';
-import Settings from '../components/Settings.vue';
-
+import { createRouter, createWebHistory } from 'vue-router';  // 使用 Vue 3 的路由方法
+import Login from '../views/login.vue';
+import Register from '../views/register.vue';
+import Home from '../views/Home.vue'
+import About from '../views/about_us/index.vue';
+import Profile from '../views/profile/index.vue';
+import Textdetect from '../views/text_detect/index.vue'
 
 const routes = [
   {
     path: '/',
-    component: UserLogin
+    name: 'start',
+    component: Login,
+    meta: {
+      keepAlive: false
+      }
   },
   {
-    path: '/userRegister',
-    component: UserRegister
+    path: '/login',
+    name: 'login',
+    component: Login,
+    meta: {
+      keepAlive: false
+      }
   },
-   {
-    path: '/MainPage',
-    component: MainPage,
-    children: [
-      { path: 'profile', component: Profile },
-      { path: 'settings', component: Settings },
-      { path: 'about', component: AboutUs },
-      { path: 'visualization', component: Visualization },
-      { path: 'textdetect', component: TextDetect },
-      { path: 'newspage', component: NewsPage },
-      { path: 'aiassist', component: AIAssist }
-    ]
+  {
+    path: '/register',
+    name: 'register',
+    component: Register,
+    meta: {
+      keepAlive: false
+      }
+  },
+  {
+    path:'/home',
+    name:'home',
+    component: Home,
+    meta: {
+      keepAlive: true
+      }
+  },
+  {
+    path:'/about',
+    name:'about',
+    component: About,
+    meta: {
+      keepAlive: true
+      }
+  },
+  {
+    path:'/profile',
+    name:'profile',
+    component: Profile,
+    meta: {
+      keepAlive: true
+      }
+  },
+  {
+    path:'/textdetect',
+    name:'textdetect',
+    component: Textdetect,
+    meta: {
+      keepAlive: true
+      }
   }
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(),  // 使用 WebHistory 模式
   routes
 });
-
 
 export default router;
