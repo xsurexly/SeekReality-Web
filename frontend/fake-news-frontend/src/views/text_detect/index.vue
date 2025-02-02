@@ -76,11 +76,12 @@ export default {
   align-items: center;
   height: 100vh;
   font-family: 'Arial', sans-serif;
-  background-color: #f9f9f9;
+  background-color: #ffffff;
 }
 
 /* 检测容器样式 */
 .detect-container {
+  margin-top: -150px;
   background-color: #ffffff;
   padding: 30px;
   border-radius: 15px;

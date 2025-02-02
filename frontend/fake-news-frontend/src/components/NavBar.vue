@@ -1,92 +1,111 @@
 <template>
-  <nav class="navbar">
-  
-    <ul class="nav-links">
-      <!-- 个人资料菜单 -->
-      <li class="profile">
-        <router-link to="/profile">
-          <SvgIcon  iconName="icon-gerenzhuye1" style="margin-right: 5px;"></SvgIcon >
-          <i class="fa fa-user"></i> 个人资料
-        </router-link>
-      </li>
-      <li>
-        <router-link to="/visualization">
-          <SvgIcon iconName="icon-a-091_shuju" style="margin-right: 5px;"></SvgIcon>
-          <i class="fa fa-chart-bar"></i> 可视化
-        </router-link>
-      </li>
-      <li>
-        <router-link to="/textdetect">
-          <SvgIcon iconName="icon-a-091_wendang-12" style="margin-right: 5px;"></SvgIcon>
-          <i class="fa fa-font"></i> 文本检测
-        </router-link>
-      </li>
-      <li>
-        <router-link to="/newspage">
-          <SvgIcon iconName="icon-a-091_zhuanlan" style="margin-right: 5px;"></SvgIcon>
-          <i class="fa fa-newspaper"></i> 新闻
-        </router-link>
-      </li>
-      <li>
-        <router-link to="/about">
-          <SvgIcon iconName="icon-a-091_xinjian" style="margin-right: 5px;"></SvgIcon>
-          <i class="fa fa-info-circle"></i> 关于我们
-        </router-link>
-      </li>
-      <li v-if="isLoggedIn">
-        <a href="#" @click="logout">退出登录</a>
-      </li>
-    </ul>
-  </nav>
+  <div class="navbar-container">
+    <!-- 左侧导航栏 -->
+    <nav :class="['navbar', { 'collapsed': isNavbarCollapsed }]">
+      <div class="hamburger-container">
+        <hamburger @toggle-menu="toggleNavbar" />
+      </div>
+      <ul class="nav-links">
+        <li>
+          <router-link to="/home" active-class="active-nav-item">
+            <SvgIcon iconName="icon-shouye2" style="margin-right: 5px;"></SvgIcon>
+            <i class="fa fa-chart-bar"></i> <span v-if="!isNavbarCollapsed">首页</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/visualization" active-class="active-nav-item">
+            <SvgIcon iconName="icon-a-091_shuju" style="margin-right: 5px;"></SvgIcon>
+            <i class="fa fa-chart-bar"></i> <span v-if="!isNavbarCollapsed">可视化</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/textdetect" active-class="active-nav-item">
+            <SvgIcon iconName="icon-a-091_wendang-12" style="margin-right: 5px;"></SvgIcon>
+            <i class="fa fa-font"></i> <span v-if="!isNavbarCollapsed">文本检测</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/newspage" active-class="active-nav-item">
+            <SvgIcon iconName="icon-a-091_zhuanlan" style="margin-right: 5px;"></SvgIcon>
+            <i class="fa fa-newspaper"></i> <span v-if="!isNavbarCollapsed">新闻阅读</span>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/about" active-class="active-nav-item">
+            <SvgIcon iconName="icon-a-091_xinjian" style="margin-right: 5px;"></SvgIcon>
+            <i class="fa fa-info-circle"></i> <span v-if="!isNavbarCollapsed">关于我们</span>
+          </router-link>
+        </li>
+      </ul>
+    </nav>
+  </div>
 </template>
 
 <script>
-import { ref } from 'vue';
+import Hamburger from './Hamburger.vue';
+//import { ref } from 'vue';
 
 export default {
-  setup() {
-    const isLoggedIn = ref(false); // 这里应该用 Vuex 或其他状态管理工具来管理
-
-    function logout() {
-      // 退出登录逻辑
-      isLoggedIn.value = false;
-    }
-
-    return {
-      isLoggedIn,
-      logout,
-    };
+  components: {
+    Hamburger,
+  },
+  props: {
+    // 接收父组件传递的 isNavbarCollapsed
+    isNavbarCollapsed: {
+      type: Boolean,
+      required: true
+    },
+  },
+  methods: {
+    // 发出事件通知父组件切换导航栏收起状态
+    toggleNavbar() {
+      this.$emit('toggle-menu');
+    },
   },
 };
 </script>
-<style lang="scss" scoped>
-.navbar {
-  background-color: white; /* 更深的绿色，给人更稳重的感觉 */
-  color: black;
-  width: 220px;
-  height: 100%;
-  position: fixed;
-  top: 0;
-  left: 0;
-  padding: 20px 0;
+
+<style scoped>
+.navbar-container {
   display: flex;
+  position: fixed;
   flex-direction: column;
-  align-items: flex-start; /* 左对齐 */
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3); /* 增加阴影效果 */
-  border-radius: 10px;
-  transition: all 0.3s ease;
+  width: 100%;
+  height: 100vh;
 }
 
-/* 设置导航链接的样式 */
+.hamburger-container {
+  display: flex;
+  align-items: center;
+  padding-left: 23px;
+  padding-top: 15px;
+  z-index: 9999;
+}
+
+.navbar {
+  background-color: #EBF5F4;
+  color: black;
+  width: 200px;
+  height: calc(100% - 60px); 
+  position: fixed;
+  top: 60px;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: all 0.3s ease;
+  /*box-shadow:-20px -2px 15px -25px #00000067 inset;*/
+}
+
+.navbar.collapsed  {
+  width: 94px;
+}
+
 .nav-links {
   list-style-type: none;
   padding: 0;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  height: calc(100% - 80px); /* 留出底部空间放个人资料 */
-  margin-top: 20px; /* 上方留点间距 */
+  margin-top: 10px;
 }
 
 .nav-links li {
@@ -97,38 +116,35 @@ export default {
 .nav-links a {
   display: flex;
   align-items: center;
-  padding: 12px 20px; /* 让按钮宽度一致，左右增加间距 */
+  padding: 12px 20px;
   color: black;
   text-decoration: none;
   font-size: 1.1rem;
   border-radius: 6px;
-  transition: background-color 0.3s ease, padding-left 0.2s ease; /* 添加缓慢的背景色变化和内边距 */
+  transition: background-color 0.3s ease, padding-left 0.2s ease;
 }
 
 .nav-links a:hover {
-  background-color: #B0E4C8; /* 按钮悬停背景色变为绿色 */
-  padding-left: 30px; /* 悬停时左侧内边距增加，给用户更好的交互反馈 */
+  background-color: #86D9D4;
+  padding-left: 30px;
 }
 
-/* 图标样式 */
 .nav-links i {
-  margin-right: 15px; /* 图标和文字之间更大的间距 */
-  font-size: 1.5rem; /* 增大图标 */
-  transition: transform 0.2s ease; /* 增加图标放大效果 */
+  margin-right: 15px;
+  font-size: 1.5rem;
+  transition: transform 0.2s ease;
 }
 
 .nav-links a:hover i {
-  transform: scale(1.1); /* 图标在悬停时微微放大 */
+  transform: scale(1.1);
 }
 
-/* 添加专门的登出链接样式 */
-.logout-link {
-  display: block;
-  padding: 12px 20px;
-  color: white;
-  text-decoration: none;
-  font-size: 1.1rem;
+
+.active-nav-item {
+  background-color: #BEEBE7; 
+  padding-left: 30px; 
   border-radius: 6px;
-  transition: background-color 0.3s ease;
+
 }
+
 </style>

@@ -11,8 +11,13 @@ from routes.history import history_bp
 app = Flask(__name__)
 app.config.from_object(Config)
 
+CORS(app)
+
 # 初始化数据库
 db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 # 注册蓝图
 app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -20,10 +25,6 @@ app.register_blueprint(profile_bp, url_prefix='/profile')
 app.register_blueprint(detect_bp, url_prefix='/api')
 app.register_blueprint(history_bp, url_prefix='/api')
 
-# 数据库初始化和表创建（如果没有表时）
-@app.before_first_request
-def create_tables():
-    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)

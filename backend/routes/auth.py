@@ -5,6 +5,7 @@ from models import db, User
 auth_bp = Blueprint('auth', __name__)
 
 # 注册功能
+@auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
     username = data.get('username')
@@ -33,6 +34,14 @@ def login():
     
     user = User.query.filter_by(username=username).first()
     if user and check_password_hash(user.password, password):  # 验证密码
-        return jsonify({'message': '登录成功'}), 200
+        return jsonify({
+            'success': True,
+            'message': '登录成功',
+            'user': {
+                'username': user.username,
+                'email': user.email,  # 可以返回一些用户相关信息
+                'password': user.password,
+            }
+        }), 200
     else:
-        return jsonify({'message': '用户名或密码错误'}), 401
+        return jsonify({'success': False, 'message': '用户名或密码错误'}), 401

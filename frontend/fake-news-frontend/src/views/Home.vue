@@ -2,7 +2,7 @@
   <div class="app-container home">
     
     <el-row>
-      <el-col :lg="12" style="padding-left: 20px">
+      <el-col :lg="12">
         <h2>项目说明</h2>
         <p>这是虚假信息检测系统首页</p>
         <p>欢迎，{{ user.username }}！</p>
@@ -12,8 +12,6 @@
 </template>
 
 <script>
-
-
 export default {
   data() {
     return {
@@ -33,20 +31,6 @@ export default {
 <style scoped>
 .home-container {
   text-align: center;
-  margin-top: 50px;
-}
-
-button {
-  background-color: #4caf50;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #388e3c;
 }
 </style>
 

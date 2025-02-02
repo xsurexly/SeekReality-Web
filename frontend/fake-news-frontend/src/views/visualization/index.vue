@@ -19,7 +19,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .aboutUs-container {
   font-family: Arial, sans-serif;
   background-color: white;

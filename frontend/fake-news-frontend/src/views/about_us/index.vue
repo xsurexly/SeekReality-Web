@@ -1,108 +1,111 @@
 <template>
   <div class="aboutUs-container">
-    <div class="content">
+    <el-card class="hero-section">
       <h1>关于我们</h1>
-      <section class="team">
-        <h2>团队介绍</h2>
-        <p>我们的团队由一群充满激情和专业的成员组成，致力于为客户提供卓越的服务。</p>
-        <!-- 团队成员列表 -->
-        <div class="team-members">
-          <div class="team-member">
-            <img src="path-to-team-member-photo.jpg" alt="团队成员照片">
-            <h3>姓名</h3>
-            <p>职位</p>
-          </div>
-          <!-- 更多团队成员 -->
-        </div>
-      </section>
+      <p>我们致力于通过科技创新解决虚假新闻问题，为用户提供可靠的信息来源。</p>
+    </el-card>
 
-      <section class="history">
-        <h2>公司历史</h2>
-        <p>自公司成立以来，我们始终坚持创新和卓越的价值观，不断为客户提供高质量的产品和服务。</p>
-      </section>
+    <div class="text">
+      <!-- 团队介绍 -->
+      <h2>团队使命</h2>
+      <p>我们的团队汇聚了来自不同领域的专家，旨在通过先进的技术手段，为社会提供更加透明、可靠的信息。我们使用机器学习和人工智能技术，帮助用户识别虚假新闻和不实信息，提升信息消费的质量。</p>
+      
+      <el-divider></el-divider>
 
-      <section class="vision">
-        <h2>我们的愿景</h2>
-        <p>我们致力于成为行业的领导者，通过不断的技术创新和卓越的客户服务，实现可持续发展。</p>
-      </section>
-
-      <section class="mission">
-        <h2>我们的使命</h2>
-        <p>我们的使命是通过提供高质量的产品和服务，满足客户的需求，同时为社会做出积极的贡献。</p>
-      </section>
+      <!-- 公司历史、愿景、使命 -->
+      <h2>我们的愿景与使命</h2>
+      <el-row :gutter="20">
+        <el-col :span="8" v-for="item in infoSections" :key="item.title">
+          <el-card class="info-card">
+            <h2>{{ item.title }}</h2>
+            <p>{{ item.description }}</p>
+          </el-card>
+        </el-col>
+      </el-row>
     </div>
   </div>
 </template>
 
 <script>
-
+import { ElCard, ElRow, ElCol, ElDivider } from 'element-plus';
 
 export default {
+  name: 'AboutUs',
   components: {
-
+    ElCard,
+    ElRow,
+    ElCol,
+    ElDivider
   },
-  name: 'AboutUs'
+  data() {
+    return {
+      infoSections: [
+        { title: '公司历史', description: '我们的项目始于对虚假新闻问题的深刻思考，并且不断优化技术，以应对信息流通中日益严重的虚假信息问题。' },
+        { title: '我们的愿景', description: '通过技术手段，帮助人们准确获取真实信息，成为虚假新闻识别领域的领导者，推动全球信息透明化进程。' },
+        { title: '我们的使命', description: '我们的使命是建立一个智能、透明的新闻验证平台，提升用户的信息甄别能力，保护公众免受虚假信息的侵害。' }
+      ]
+    };
+  }
 };
 </script>
 
-<style>
+<style scoped>
 .aboutUs-container {
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f7f7f7;
-  color: #333;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.content {
-  flex-grow: 1;
-  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+  color: black;
   text-align: center;
+  padding-bottom: 50px;
 }
 
-h1, h2 {
-  color: #2c3e50;
+.hero-section {
+  margin: 0 auto;
+  width: 95%;
+  padding: 60px 20px;
+  background: linear-gradient(135deg, #EBF5F4, #86D9D4);
+  border-radius: 15px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.hero-section:hover {
+  transform: scale(1.02);
+  border-radius: 15px;
 }
 
 h1 {
-  margin-bottom: 20px;
-  font-size: 2.5em;
-}
-
-h2 {
-  margin-bottom: 15px;
-  font-size: 1.5em;
-}
-
-p {
-  line-height: 1.6;
-  margin-bottom: 20px;
-}
-
-.team-members {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 20px;
-}
-
-.team-member {
-  text-align: center;
-  max-width: 200px;
-}
-
-.team-member img {
-  width: 100%;
-  height: auto;
-  border-radius: 50%;
+  font-size: 3em;
+  font-weight: bold;
   margin-bottom: 10px;
 }
 
-/* 添加响应式设计 */
+p {
+  font-size: 1.2em;
+  opacity: 0.8;
+}
+
+.text {
+  padding: 20px 20px;
+}
+
+.info-card {
+  background: linear-gradient(135deg, #EBF5F4, #86D9D4);
+  border-radius: 15px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.info-card:hover {
+  transform: scale(1.05);
+}
+
+/* 响应式布局 */
 @media (max-width: 768px) {
-  .team-members {
-    flex-direction: column;
+  .hero-section {
+    margin: 10px;
+  }
+  .info-card {
+    margin: 10px;
   }
 }
 </style>

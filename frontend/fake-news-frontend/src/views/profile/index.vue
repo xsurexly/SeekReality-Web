@@ -48,7 +48,7 @@ export default {
 <style scoped>
 .profile-container {
   font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f7f7f7;
+  background-color: #ffffff;
   color: #333;
   display: flex;
   flex-direction: column;

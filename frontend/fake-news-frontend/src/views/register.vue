@@ -34,7 +34,7 @@ export default {
         return;
       }
       try {
-        const response = await fetch('http://127.0.0.1:5000/register', {
+        const response = await fetch('http://127.0.0.1:5000/auth/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -48,7 +48,7 @@ export default {
         const data = await response.json();
         if (data.success) {
           alert('注册成功！');
-          this.$router.push('/login')
+          this.$router.push('/login');
         } else {
           alert(data.message);
         }
@@ -61,18 +61,19 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .register-container {
   font-family: 'Roboto', sans-serif;
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  background-color: #EBF5F4;
+  color: #000000;
   width: 350px;
   margin: 0px auto;
   padding: 25px;
   border-radius: 10px;
   box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
-  margin-top: 150px;
+  margin-top: 100px;
+  margin-bottom: 30px;
 }
 
 p {
@@ -80,7 +81,7 @@ p {
 }
 
 .login-link {
-  color: #388e3c;
+  color: #4EBFB9;
   text-decoration: none;
   font-weight: bold;
 }
@@ -91,7 +92,7 @@ p {
 
 .register-container h1 {
   margin-bottom: 20px;
-  color: #2e7d32; /* 深绿色标题 */
+  color: #000000; /* 深绿色标题 */
   font-size: 1.8rem;
 }
 label {
@@ -106,21 +107,21 @@ input[type="email"] {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
-  border: 1px solid #c8e6c9;
+  border: 1px solid #86D9D4;
   border-radius: 5px;
-  background-color: #f1f8e9; /* 浅绿色背景 */
+  background-color: #c8e9e6a5; /* 浅绿色背景 */
   box-sizing: border-box;
   font-size: 1rem;
 }
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus {
-  border-color: #81c784;
+  border-color: #279C9C;
   outline: none;
-  box-shadow: 0 0 5px rgba(46, 125, 50, 0.5);
+  box-shadow: 0 0 5px 000000ae(46, 125, 50, 0.5);
 }
 input[type="submit"] {
-  background-color: #4caf50; /* 按钮绿色背景 */
+  background-color: #4EBFB9; /* 按钮绿色背景 */
   color: white;
   padding: 12px;
   width: 100%;
@@ -132,10 +133,10 @@ input[type="submit"] {
   transition: background-color 0.3s ease;
 }
 input[type="submit"]:hover {
-  background-color: #388e3c;
+  background-color: #86D9D4;
 }
 input[type="submit"]:active {
-  background-color: #388e3c;
+  background-color: #86D9D4;
 }
 
 </style>

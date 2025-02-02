@@ -5,6 +5,9 @@ import Home from '../views/Home.vue'
 import About from '../views/about_us/index.vue';
 import Profile from '../views/profile/index.vue';
 import Textdetect from '../views/text_detect/index.vue'
+import Visualization from '../views/visualization/index.vue'
+import Newspage from '../views/news_page/index.vue'
+
 
 const routes = [
   {
@@ -33,7 +36,7 @@ const routes = [
   },
   {
     path:'/home',
-    name:'home',
+    name:'Home',
     component: Home,
     meta: {
       keepAlive: true
@@ -62,6 +65,22 @@ const routes = [
     meta: {
       keepAlive: true
       }
+  },
+  {
+  path:'/visualization',
+  name:'visualization',
+  component: Visualization,
+  meta: {
+    keepAlive: true
+    }
+  },
+  {
+  path:'/newspage',
+  name:'newspage',
+  component: Newspage,
+  meta: {
+    keepAlive: true
+    }
   }
 ];
 
