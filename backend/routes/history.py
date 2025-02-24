@@ -4,16 +4,18 @@ from models import db, DetectionHistory
 history_bp = Blueprint('history', __name__)
 
 # 保存检测记录
-def save_detection_history(user_id, detection_type, detection_content=None, file_path=None, result=""):
+def save_detection_history(user_id, detection_type, detection_content=None, file_path=None, result="", detect_time=None):
     history = DetectionHistory(
         user_id=user_id,
         detection_type=detection_type,
         detection_content=detection_content,
         file_path=file_path,
-        result=result
+        result=result,
+        detected_at=detect_time  # 使用 detect_time 参数
     )
     db.session.add(history)
     db.session.commit()
+
 
 # 查询检测历史
 @history_bp.route('/history', methods=['GET'])

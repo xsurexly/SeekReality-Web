@@ -45,6 +45,7 @@
     },
     "rules": {
       "no-undef": "off"
+      
     }
   },
   "browserslist": [

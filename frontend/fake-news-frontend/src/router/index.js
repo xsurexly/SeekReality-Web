@@ -7,6 +7,7 @@ import Profile from '../views/profile/index.vue';
 import Textdetect from '../views/text_detect/index.vue'
 import Visualization from '../views/visualization/index.vue'
 import Newspage from '../views/news_page/index.vue'
+import Password_modify from '@/views/password_modify.vue';
 
 
 const routes = [
@@ -22,6 +23,14 @@ const routes = [
     path: '/login',
     name: 'login',
     component: Login,
+    meta: {
+      keepAlive: false
+      }
+  },
+  {
+    path: '/password_modify',
+    name: 'password_modify',
+    component: Password_modify,
     meta: {
       keepAlive: false
       }

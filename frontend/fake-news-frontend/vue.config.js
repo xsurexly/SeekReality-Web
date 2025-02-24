@@ -15,4 +15,22 @@ module.exports = defineConfig({
       }),
     ],
   },
+  devServer: {
+    port: 8080, // 明确指定端口号
+    open: true,
+    client: { // 将 overlay 移动到 client 对象中
+      overlay: {
+        warnings: false,
+        errors: true
+      }
+    },
+    proxy: {
+      '/apis': {
+        target: 'http://api.jisuapi.com', // 修复了 URL 的格式
+        secure: false,
+        changeOrigin: true,
+        pathRewrite: { '^/apis': '' }
+      }
+    }
+  },
 });

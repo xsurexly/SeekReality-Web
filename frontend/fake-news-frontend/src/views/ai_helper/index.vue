@@ -8,11 +8,11 @@
       ref="aiIcon"
       @click="openAI"
     >
-      <SvgIcon iconName="icon-a-091_duihua" style="width:60px;height:60px;margin-top:10px;margin-left:10px"></SvgIcon>
+      <SvgIcon iconName="icon-liaotian" style="width:30px;height:30px;margin-top:15px;margin-left:15px"></SvgIcon>
     </div>
 
     <!-- AI助手弹窗 -->
-    <div v-if="aiOpen" class="ai-popup":style="{ width: currentWidth + 'px' }">
+    <div v-if="aiOpen" class="ai-popup" :style="{ width: currentWidth + 'px' }">
       <div class="ai-popup-header">
         <span style="margin-top:5px">进行对话</span>
         <button @click="closeAI"><SvgIcon iconName="icon-guanbi" style="width:20px;height:20px"></SvgIcon></button>
@@ -82,14 +82,15 @@ export default {
 <style scoped>
 .ai-icon {
   position: fixed;
-  bottom: 60px;
-  right: 60px;
-  width:80px;
-  height:80px;
+  bottom: 30px;
+  right: 30px;
+  width:60px;
+  height:60px;
   cursor: pointer;
   z-index: 1000;
+  background-color: #fff;
   box-shadow: -4px 0 10px rgba(0, 0, 0, 0.3);
-  border-radius:40px;
+  border-radius:60px;
 }
 
 .ai-popup {
@@ -99,7 +100,7 @@ export default {
   transform: translateY(-50%);
   width: 400px;  /* 默认宽度 */
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgb(255, 255, 255);
   border-left: 3px solid #B0E4C8;
   box-shadow: -4px 0 10px rgba(0, 0, 0, 0.3);
   border-radius:10px;

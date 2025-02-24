@@ -1,18 +1,22 @@
 <template>
   <div class="register-container">
-    <h1>新用户注册</h1>
+    <img src="../assets/logo.png" alt="" style="width: 250px;margin-bottom: 50px;">
+
     <form @submit.prevent="register">
-      <label for="username">用户名：</label>
+      <label for="username"></label>
       <input type="text" v-model="username" id="username" placeholder="请输入用户名" required><br>
-      <label for="password">密码：</label>
+      <label for="password"></label>
       <input type="password" v-model="password" id="password" placeholder="请输入密码" required><br>
-      <label for="confirmPassword">确认密码：</label>
+      <label for="confirmPassword"></label>
       <input type="password" v-model="confirmPassword" id="confirmPassword" placeholder="请确认密码" required><br>
-      <label for="email">邮箱（可选）：</label>
+      <label for="email"></label>
       <input type="email" v-model="email" id="email" placeholder="请输入邮箱"><br>
       <input type="submit" value="注册">
     </form>
-    <p>已有账户？<router-link to="/login" class="login-link">登录</router-link></p>
+    <p>
+      <router-link to="/password_modify" class="password_modify">忘记密码</router-link>
+      <router-link to="/login" class="login-link">前往登录</router-link>
+    </p>
 
   </div>
 </template>
@@ -64,16 +68,17 @@ export default {
 <style scoped>
 .register-container {
   font-family: 'Roboto', sans-serif;
-  background-color: #EBF5F4;
   color: #000000;
   width: 350px;
   margin: 0px auto;
-  padding: 25px;
   border-radius: 10px;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
   margin-top: 100px;
   margin-bottom: 30px;
+  background-color: #fff;
+  padding: 60px;
+  border-radius: 5px;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
 p {
@@ -81,12 +86,22 @@ p {
 }
 
 .login-link {
-  color: #4EBFB9;
+  color: #409EFF;
   text-decoration: none;
-  font-weight: bold;
+  float: right;
 }
 
 .login-link:hover {
+  text-decoration: underline;
+}
+
+.password_modify {
+  color: #409EFF;
+  text-decoration: none;
+  float: left;
+}
+
+.password_modify:hover {
   text-decoration: underline;
 }
 
@@ -106,37 +121,49 @@ input[type="password"],
 input[type="email"] {
   width: 100%;
   padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #86D9D4;
+  margin-bottom: 25px;
+  border: 1px solid #b5b5b5;
   border-radius: 5px;
-  background-color: #c8e9e6a5; /* 浅绿色背景 */
   box-sizing: border-box;
   font-size: 1rem;
 }
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="email"]:focus {
-  border-color: #279C9C;
   outline: none;
-  box-shadow: 0 0 5px 000000ae(46, 125, 50, 0.5);
+  border-color: #409EFF;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
+
 input[type="submit"] {
-  background-color: #4EBFB9; /* 按钮绿色背景 */
+  background-color: #409EFF; /* 按钮绿色背景 */
   color: white;
   padding: 12px;
   width: 100%;
   border: none;
   border-radius: 5px;
   font-size: 1rem;
-  font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  margin-top: 15px;
 }
 input[type="submit"]:hover {
-  background-color: #86D9D4;
+  background-color: rgb(121.3, 187.1, 255);
 }
 input[type="submit"]:active {
-  background-color: #86D9D4;
+  background-color: rgb(121.3, 187.1, 255);
+}
+
+/* 响应式支持 */
+@media (max-width: 400px) {
+  .register-container {
+    width: 90%;
+    padding: 20px;
+  }
+
+  input[type="submit"] {
+    font-size: 0.9rem;
+  }
 }
 
 </style>

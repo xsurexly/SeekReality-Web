@@ -1,14 +1,12 @@
 <template>
   <div class="navbar-container">
-    <!-- 使用 el-menu 重构导航栏 -->
     <el-menu
       :default-active="activeMenu"
       class="el-menu-vertical"
       :collapse="isNavbarCollapsed"
-      :collapse-transition="false"
-      background-color="#EBF5F4"
+      :collapse-transition="true"
       text-color="#000"
-      active-text-color="#000"
+      active-text-color="var(--el-color-primary)"
     >
       <!-- Logo 区域 -->
       <router-link to="/home">
@@ -201,6 +199,7 @@ const logout = () => {
     bottom: 20px;
     width: 100%;
     padding: 0 10px;
+    margin-left: 7px;
     
     .user-content {
       display: flex;
@@ -215,45 +214,5 @@ const logout = () => {
   }
 }
 
-/* 覆盖 Element 默认样式 */
-.el-menu-item {
-  height: 50px;
-  line-height: 50px;
-  
-  &:hover {
-    background-color: #86D9D4 !important;
-    transform: scale(1.03);
-    border-radius: 10px;
-  }
-  
-  &.is-active {
-    background-color: #BEEBE7 !important;
-  }
-}
 
-.el-dropdown-menu__item {
-  display: flex;
-  align-items: center;
-  
-  .el-icon {
-    margin-right: 8px;
-  }
-  
-  &:hover {
-    background-color: #86D9D4 !important;
-    transform: scale(1.03);
-    border-radius: 10px;
-  }
-}
-
-.el-dropdown-menu{
-  background-color: #EBF5F4;
-  color: #000;
-}
-.el-dropdown__popper {
-    --el-dropdown-menu-box-shadow: var(--el-box-shadow-light);
-    --el-dropdown-menuItem-hover-fill: #000;
-    --el-dropdown-menuItem-hover-color: #4ebfb9;
-    --el-dropdown-menu-index: 10;
-}
 </style>

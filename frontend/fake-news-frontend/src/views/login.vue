@@ -1,15 +1,16 @@
 <template>
   <div class="login-container">
-    <h1>用户登录</h1>
+    <img src="../assets/logo.png" alt="" style="width: 250px;margin-bottom: 50px;">
+    
     <form @submit.prevent="login">
-      <label for="username">用户名：</label>
+      <label for="username"></label>
       <input type="text" v-model="username" id="username" placeholder="请输入用户名" autocomplete="off" required>
-      <label for="password">密码：</label>
+      <label for="password"></label>
       <input type="password" v-model="password" id="password" placeholder="请输入密码" autocomplete="off" required >
       <input type="submit" value="登录">
     </form>
     <p>
-      还没有账号？
+      <router-link to="/password_modify" class="password_modify">忘记密码</router-link>
       <router-link to="/register" class="register-link">点击注册</router-link>
     </p>
   </div>
@@ -71,24 +72,25 @@ body, html {
 
 /* 登录容器样式 */
 .login-container {
-  background-color: #EBF5F4; /* 浅绿色背景 */
   width: 350px;
   margin: 0px auto;
   margin-top: 150px;
   margin-bottom: 30px;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
   text-align: center;
   align-items: center;
+  background-color: #fff;
+  padding: 60px;
+  border-radius: 10px;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
   
 }
 
 /* 标题样式 */
 .login-container h1 {
   margin-bottom: 20px;
-  color: #000000; /* 深绿色标题 */
+  color: #525252;
   font-size: 1.8rem;
+  font-weight: 550;
 
 }
 
@@ -106,10 +108,9 @@ input[type="text"],
 input[type="password"] {
   width: 100%;
   padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #87C1AA;
+  margin-bottom: 25px;
+  border: 1px solid #b5b5b5;
   border-radius: 5px;
-  background-color: #c8e9e6a5; /* 浅绿色背景 */
   font-size: 1rem;
   box-sizing: border-box;
 }
@@ -118,40 +119,50 @@ input[type="password"] {
 input[type="text"]:focus,
 input[type="password"]:focus {
   outline: none;
-  border-color: #279C9C; /* 聚焦时边框变深绿色 */
-  box-shadow: 0 0 5px #000000ae (46, 125, 50, 0.5);
+  border-color: #409EFF;
+  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
 /* 按钮样式 */
 input[type="submit"] {
-  background-color: #4EBFB9; /* 按钮绿色背景 */
+  background-color: #409EFF; /* 按钮绿色背景 */
   color: white;
   padding: 12px;
   width: 100%;
   border: none;
   border-radius: 5px;
   font-size: 1rem;
-  font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
+  margin-top: 15px;
 }
 
 .register-link {
-  color: #4EBFB9;
+  color: #409EFF;
   text-decoration: none;
-  font-weight: bold;
+  float: right;
 }
 
 .register-link:hover {
   text-decoration: underline;
 }
 
+.password_modify {
+  color: #409EFF;
+  text-decoration: none;
+  float: left;
+}
+
+.password_modify:hover {
+  text-decoration: underline;
+}
+
 /* 按钮悬停效果 */
 input[type="submit"]:hover {
-  background-color: #86D9D4; /* 悬停时按钮变深绿色 */
+  background-color: rgb(121.3, 187.1, 255); /* 悬停时按钮变深绿色 */
 }
 input[type="submit"]:active {
-  background-color: #86D9D4;
+  background-color: rgb(121.3, 187.1, 255);
 }
 
 /* 响应式支持 */

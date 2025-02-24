@@ -5,9 +5,9 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import SvgIcon from '@/components/SvgIcon.vue';
 import '@/assets/iconfont.js'
+import axios from "axios";
 
-createApp(App)
-  .use(ElementPlus)
-  .use(router)
-  .component('SvgIcon', SvgIcon)
-  .mount('#app');
+const app = createApp(App);
+  
+app.config.globalProperties.$axios = axios;
+app.use(ElementPlus).use(router).component('SvgIcon', SvgIcon).mount('#app');

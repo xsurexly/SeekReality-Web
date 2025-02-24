@@ -1,12 +1,9 @@
 <template>
   <div class="common-layout" id="app">
     <el-container class="main-container">
-      <el-header>
-        <Header v-if="$route.meta.keepAlive"></Header>
-      </el-header>
       <el-container>
         <!-- 左侧导航栏，动态宽度 -->
-        <el-aside :style="{ width: isNavbarCollapsed ? '94px' : '200px' }" v-if="$route.meta.keepAlive">
+        <el-aside :style="{ width: isNavbarCollapsed ? '75px' : '200px' }" v-if="$route.meta.keepAlive">
           <Navbar @toggle-menu="toggleNavbar" :isNavbarCollapsed="isNavbarCollapsed" />
         </el-aside>
 
@@ -14,6 +11,9 @@
         <el-main :class="{ 'isNavbarCollapsed': isNavbarCollapsed }">
           <div class="content">
             <router-view />
+          </div>
+          <div class="aihelper" v-if="$route.meta.keepAlive">
+            <AIhelper></AIhelper>
           </div>
         </el-main>
       </el-container>
@@ -23,13 +23,13 @@
 
 <script>
 import Navbar from './components/Navbar.vue'
-import Header from './components/Header.vue'
+import AIhelper from'./views/ai_helper/index.vue'
 
 export default {
   name: 'App',
   components: {
     Navbar,
-    Header
+    AIhelper
   },
   data() {
     return {
@@ -64,6 +64,7 @@ export default {
   flex-grow: 1; /* 内容区域自动扩展，占据剩余空间 */
   padding: 20px;
   transition: margin-left 0.3s ease; /* 内容区的过渡效果 */
+  background-color:rgba(226, 226, 226, 0.259);
 }
 
 /* 收起导航栏时，右侧内容区向左移动 */
@@ -74,11 +75,11 @@ export default {
 .content {
   overflow-y: auto; /* 如果内容超出，允许滚动 */
   text-align: center;
-  background-color: #ffffff;
 }
 
-Header{
-  margin-left: -15px;
+
+.aihelper{
+  z-index: 999;
 }
 
 </style>

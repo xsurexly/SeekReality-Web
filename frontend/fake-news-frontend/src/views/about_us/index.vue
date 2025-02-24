@@ -61,7 +61,7 @@ export default {
   margin: 0 auto;
   width: 95%;
   padding: 60px 20px;
-  background: linear-gradient(135deg, #EBF5F4, #86D9D4);
+  background: linear-gradient(135deg, #EBF5F4, #409EFF);
   border-radius: 15px;
   text-align: center;
   transition: transform 0.3s ease;
@@ -88,7 +88,7 @@ p {
 }
 
 .info-card {
-  background: linear-gradient(135deg, #EBF5F4, #86D9D4);
+  background: linear-gradient(135deg, #EBF5F4, #409EFF);
   border-radius: 15px;
   padding: 20px;
   text-align: center;
