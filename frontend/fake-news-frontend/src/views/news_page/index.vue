@@ -1,83 +1,110 @@
 <template>
-  <div class="home-container">
-    
-    <el-row>
-      <el-col :lg="12">
-        <h2>项目说明</h2>
-        <p>这是虚假信息检测系统首页</p>
-      </el-col>
-    </el-row>
+  <div class="news-container">
+    <h1>新闻阅读</h1>
+    <div v-if="news.length" class="news-list">
+      <div v-for="item in news" :key="item.id" class="news-item">
+        <img :src="item.picUrl || defaultAvatar" alt="新闻图片" class="news-image" />
+        <div class="news-content">
+          <h2>{{ item.title }}</h2>
+          <p class="news-description">{{ item.description }}</p>
+          <a :href="item.url" target="_blank" class="read-more">阅读全文</a> <!-- 确保链接指向目标新闻 -->
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <p>加载中...</p>
+    </div>
   </div>
 </template>
 
+<script>
+import axios from 'axios';
 
-<style lang="scss" scoped>
-.channel-box {
-  width: 100%;
-  padding: 0 20px;
-  height: 46px;
-  position: fixed;
-  align-items: center;
-  top: 1.2rem;
-  font-size: 18px;
-  letter-spacing: 3px;
-  background-color: rgb(252, 248, 248);
-  .channel-list {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    position: relative;
-    margin-top: 0.2rem;
-    ul {
-      transition-duration: 0.3s;
-      position: absolute;
-      top: 0px;
-      left: 0px;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-wrap: nowrap;
-      li {
-        white-space: nowrap;
-        display: inline-block;
-        white-space: nowrap;
-        padding: 0 10px;
-      }
-      li:first-child {
-        padding-left: 0;
-      }
-      li:last-child {
-        padding-right: 0;
+export default {
+  name: 'NewsPage',
+  data() {
+    return {
+      news: [],
+      defaultAvatar: 'http://localhost:8080/default-avatar.png', // 默认头像路径
+    };
+  },
+  created() {
+    this.fetchNews();
+  },
+  methods: {
+    async fetchNews() {
+      try {
+        const response = await axios.get('http://localhost:5000/news/get_news', {
+          params: { num: 10, page: 3 }
+        });
+        console.log("获取到的新闻数据:", response.data);
+        this.news = response.data;
+      } catch (error) {
+        console.error('获取新闻失败:', error);
+        console.error('请求的URL:', error.config.url);
       }
     }
-    .channel {
-      cursor: pointer;
-      display: inline-block;
-      height: 28px;
-      line-height: 28px;
-      transition: border-color 0.2s;
-      &:hover {
-        color: #e72521;
-      }
-    }
-    .channel-active {
-      color: #e72521;
-    }
   }
-  .icon-lf {
-    cursor: pointer;
-    line-height: 30px;
-    position: absolute;
-    left: 5px;
-    top: 6px;
-  }
-  .icon-rt {
-    line-height: 30px;
-    cursor: pointer;
-    position: absolute;
-    right: 5px;
-    top: 6px;
-  }
+};
+</script>
+
+<style scoped>
+.news-container {
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  padding: 20px;
+  max-width: 800px;
+  margin: auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.news-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.news-item {
+  background: white;
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 15px;
+  display: flex;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.news-item:hover {
+  transform: scale(1.02);
+}
+
+.news-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  margin-right: 15px;
+}
+
+.news-content {
+  flex-grow: 1;
+}
+
+.news-description {
+  font-size: 14px;
+  color: #555;
+}
+
+.read-more {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.read-more:hover {
+  background-color: #0056b3;
 }
 </style>
-

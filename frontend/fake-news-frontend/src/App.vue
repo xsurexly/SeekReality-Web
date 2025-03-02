@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import Navbar from './components/Navbar.vue'
+import Navbar from './components/NavBar.vue'
 import AIhelper from'./views/ai_helper/index.vue'
 
 export default {
@@ -45,27 +45,35 @@ export default {
 };
 </script>
 
-<style scoped>
-/* Flex 布局容器 */
+<style scoped lang="scss">
+@use "@/assets/styles/_themes.scss" as *;
+
+#app {
+  height: 100vh;
+  color: var(--font-color);
+}
+
 .main-container {
   display: flex; /* 使用 flex 布局 */
   height: 100vh;
+  background-color: var(--bg-color);
 }
 
-/* 左侧导航栏 */
-.el-aside {
-  color: black;
-  transition: width 0.3s ease;
-  /* 默认宽度为200px，收起时为94px */
-}
-
-/* 右侧内容区域 */
 .el-main {
   flex-grow: 1; /* 内容区域自动扩展，占据剩余空间 */
   padding: 20px;
   transition: margin-left 0.3s ease; /* 内容区的过渡效果 */
-  background-color:rgba(226, 226, 226, 0.259);
+  background-color: var(--bg-color);
 }
+
+
+/* 左侧导航栏 */
+.el-aside {
+  color: var(--font-color);
+  transition: width 0.3s ease;
+  /* 默认宽度为200px，收起时为94px */
+}
+
 
 /* 收起导航栏时，右侧内容区向左移动 */
 .el-main.isNavbarCollapsed {

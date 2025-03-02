@@ -8,6 +8,9 @@ import Textdetect from '../views/text_detect/index.vue'
 import Visualization from '../views/visualization/index.vue'
 import Newspage from '../views/news_page/index.vue'
 import Password_modify from '@/views/password_modify.vue';
+import History from '../views/detect_history/index.vue';
+import ReadHistory from '../views/read_history/index.vue';
+
 
 
 const routes = [
@@ -90,6 +93,22 @@ const routes = [
   meta: {
     keepAlive: true
     }
+  },
+  {
+    path:'/detecthistory',
+    name:'detecthistory',
+    component: History,
+    meta: {
+      keepAlive: true
+      }
+  },
+  {
+    path:'/read_history',
+    name:'read_history',
+    component: ReadHistory,
+    meta: {
+      keepAlive: true
+      }
   }
 ];
 

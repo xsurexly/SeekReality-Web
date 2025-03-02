@@ -2,7 +2,7 @@
   <div class="file-detection">
     <!-- 左侧上传区域 -->
     <div class="upload-section">
-      <el-card shadow="hover">
+      <el-card shadow="hover" style="background: var(--navbar-bg);">
         <!-- 上传头部 -->
         <div class="upload-header">
           <h4>文件上传</h4>
@@ -35,7 +35,7 @@
 
         <!-- 文件列表 -->
         <div class="file-list" v-if="fileList.length > 0">
-          <div 
+          <div
             class="file-item"
             v-for="(file, index) in fileList"
             :key="file.uid"
@@ -81,9 +81,9 @@
 
     <!-- 右侧结果区域 -->
     <div class="result-section">
-      <el-card shadow="hover">
+      <el-card shadow="hover" style="background: var(--navbar-bg);color: var(--font-color);">
         <h4>检测进度</h4>
-        
+
         <!-- 总进度 -->
         <div class="total-progress">
           <el-progress
@@ -99,7 +99,7 @@
 
         <!-- 实时结果 -->
         <div class="realtime-results">
-          <div 
+          <div
             v-for="(result, index) in detectionResults"
             :key="index"
             class="result-item"
@@ -186,17 +186,27 @@ const customColors = [
 ]
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use "@/assets/styles/_themes.scss" as *;
 .file-detection {
+  padding: 20px;
+  margin: 20px;
   display: flex;
   gap: 20px;
-  height: 100vh;
+
 
   .upload-section, .result-section {
     flex: 1;
     min-width: 450px;
+
   }
 }
+
+:deep(.el_card__body){
+  background: var(--navbar-bg);
+}
+
+
 
 .upload-header {
   display: flex;
@@ -207,7 +217,7 @@ const customColors = [
   h4 {
     margin: 0;
     font-size: 16px;
-    color: #303133;
+    color: var(--font-color);
   }
 }
 
@@ -216,7 +226,7 @@ const customColors = [
 
   :deep(.el-upload-dragger) {
     padding: 30px;
-    background: #f8fafc;
+    background: var(--navbar-bg);
     border-color: #e2e8f0;
   }
 
@@ -226,16 +236,16 @@ const customColors = [
     align-items: center;
 
     .upload-icon {
-      color: #94a3b8;
+      color: var(--font-color);
       margin-bottom: 10px;
     }
 
     .el-upload__text {
-      color: #64748b;
+      color: var(--font-color);
       font-size: 14px;
 
       .el-upload__subtext {
-        color: #94a3b8;
+        color: var(--font-color);
         font-size: 12px;
         margin-top: 6px;
       }
@@ -254,7 +264,7 @@ const customColors = [
     align-items: center;
     padding: 12px;
     margin: 8px 0;
-    background: #f8fafc;
+    background: var(--navbar-bg);
     border-radius: 6px;
 
     .file-info {
@@ -263,18 +273,18 @@ const customColors = [
       gap: 10px;
 
       .file-icon {
-        color: #64748b;
+        color: var(--font-color);
       }
 
       .file-details {
         .file-name {
           font-size: 13px;
-          color: #1e293b;
+          color: var(--font-color);
         }
 
         .file-size {
           font-size: 12px;
-          color: #64748b;
+          color: var(--font-color);
         }
       }
     }
@@ -298,7 +308,7 @@ const customColors = [
 
   .progress-info {
     text-align: right;
-    color: #64748b;
+    color: var(--font-color);
     font-size: 12px;
     margin-top: 8px;
   }
@@ -322,7 +332,7 @@ const customColors = [
 
       .filename {
         font-size: 13px;
-        color: #1e293b;
+        color: var(--font-color);
       }
     }
 
@@ -332,7 +342,7 @@ const customColors = [
       align-items: center;
       margin-top: 8px;
       font-size: 12px;
-      color: #64748b;
+      color: var(--font-color);
     }
   }
 }

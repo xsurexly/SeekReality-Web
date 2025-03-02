@@ -15,59 +15,127 @@
     <div v-if="aiOpen" class="ai-popup" :style="{ width: currentWidth + 'px' }">
       <!-- 最上面的指示 -->
       <div class="ai-popup-header">
-        <span style="margin-top:5px">进行对话</span>
+        <span style="margin-top:5px">AI智能助手</span>
         <button @click="closeAI">
           <SvgIcon iconName="icon-guanbi" style="width:20px;height:20px"></SvgIcon>
         </button>
       </div>
       <!-- 聊天内容区域 -->
       <div class="ai-popup-content" v-show="!isCollapsed">
+        <!-- 对话模式选择 -->
+        <div class="conversation-mode">
+          <label class="mode-label">
+            <input type="radio" v-model="conversationMode" value="chat" /> 普通对话
+          </label>
+          <label class="mode-label">
+            <input type="radio" v-model="conversationMode" value="analysis" /> 新闻分析
+          </label>
+        </div>
+
+        <!-- 模式说明 -->
+        <div class="mode-description">
+          <p v-if="conversationMode === 'chat'">
+            当前模式：普通对话 - 可以进行日常交谈和问答
+          </p>
+          <p v-else>
+            当前模式：新闻分析 - 输入新闻内容，AI将帮助分析其真实性
+          </p>
+        </div>
+
         <!-- 问答区域 -->
         <div class="chat-container">
-          <div class="messages-container">
+          <div class="messages-container" ref="messagesContainer">
             <div v-for="(msg, index) in messages" :key="index" class="message-group">
               <!-- 用户消息 -->
               <div class="user-message">
+                <div class="message-content">{{ msg.user }}</div>
                 <div class="avatar">
                   <i class="fas fa-user"></i>
                 </div>
-                <div class="message-content">{{ msg.user }}</div>
               </div>
 
               <!-- 助手回复 -->
               <div class="assistant-message">
                 <div class="avatar">
-                  <i class="fas fa-robot"></i>
+                  <i :class="conversationMode === 'analysis' ? 'fas fa-search' : 'fas fa-robot'"></i>
                 </div>
-                <div class="message-content" v-html="formatResponse(msg.assistant)"></div>
+                <div class="message-content">
+                  <div v-if="msg.assistant === '正在思考中...' || msg.assistant === '正在分析中...'" class="typing">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <div v-else>
+                    <div v-if="conversationMode === 'analysis' && msg.assistant.includes('真实性评分')" class="analysis-report">
+                      <div class="report-header">
+                        <div class="report-title">
+                          <h2>新闻真实性分析报告</h2>
+                          <span class="report-subtitle">AI智能分析结果</span>
+                        </div>
+                        <div class="report-actions">
+                          <div class="export-dropdown">
+                            <button class="export-btn" @click="toggleExportMenu">
+                              <i class="fas fa-file-export"></i>
+                              导出报告
+                              <i class="fas fa-chevron-down ml-2"></i>
+                            </button>
+                            <div class="export-menu" v-if="showExportMenu">
+                              <button class="export-option" @click="exportReport(msg.assistant, 'html')">
+                                <i class="fas fa-file-code"></i>
+                                导出为HTML
+                              </button>
+                              <button class="export-option" @click="exportReport(msg.assistant, 'pdf')">
+                                <i class="fas fa-file-pdf"></i>
+                                导出为PDF
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="report-content" v-html="formatResponse(msg.assistant)"></div>
+                    </div>
+                    <div v-else v-html="formatResponse(msg.assistant)"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
         <!-- 输入区域 -->
-        <!-- 文本输入+上传文件按钮 -->
         <div class="input-section">
           <textarea
             v-model="userMessage"
-            @keyup.enter="sendMessage"
-            placeholder="请输入需要分析的新闻内容..."
+            @keyup.enter.exact="sendMessage"
+            @keyup.ctrl.enter="handleNewLine"
+            :placeholder="getPlaceholder"
             :disabled="loading"
             rows="3"
           ></textarea>
           <div v-if="error" class="error-message">{{ error }}</div>
-          <div class="upload-section">
-            <input
-              type="file"
-              ref="fileInput"
-              @change="handleFileUpload"
-              accept=".docx,.pdf"
-              style="display: none"
-            />
-            <button @click="triggerFileUpload" :disabled="loading" class="upload-button">
-              <i class="fas fa-file-upload"></i>
-              上传文件
+          <div class="button-group">
+            <div class="upload-section" v-if="conversationMode === 'analysis'">
+              <input
+                type="file"
+                ref="fileInput"
+                @change="handleFileUpload"
+                accept=".docx,.pdf"
+                style="display: none"
+              />
+              <button @click="triggerFileUpload" :disabled="loading" class="upload-button">
+                <i class="fas fa-file-upload"></i>
+                上传文件
+              </button>
+              <span v-if="selectedFile" class="file-name">{{ selectedFile.name }}</span>
+            </div>
+            <button
+              @click="sendMessage"
+              :disabled="loading || !userMessage.trim()"
+              class="send-button"
+            >
+              <i class="fas fa-paper-plane"></i>
+              发送
             </button>
-            <span v-if="selectedFile" class="file-name">{{ selectedFile.name }}</span>
           </div>
         </div>
       </div>
@@ -78,7 +146,8 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, watch, nextTick, computed, onMounted } from 'vue';
+
 export default {
   setup() {
     // AI助手状态相关
@@ -90,6 +159,7 @@ export default {
     const offsetY = ref(0);
     const initialMouseX = ref(0);
     const initialWidth = ref(0);
+    const messagesContainer = ref(null);
 
     // 聊天相关状态
     const messages = ref([]);
@@ -98,20 +168,46 @@ export default {
     const error = ref('');
     const fileInput = ref(null);
     const selectedFile = ref(null);
+    const conversationMode = ref('chat'); // 默认为普通对话模式
+    const showExportMenu = ref(false);
+
+    // 计算属性
+    const getPlaceholder = computed(() => {
+      return conversationMode.value === 'chat'
+        ? '输入您想说的话，按Enter发送，Ctrl+Enter换行...'
+        : '请输入需要分析的新闻内容，或上传新闻文件...';
+    });
+
+    // 监听消息变化，自动滚动到底部
+    watch(() => messages.value.length, async () => {
+      await nextTick();
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
+      }
+    });
 
     // AI助手控制方法
     const openAI = () => {
       aiOpen.value = true;
+      // 添加欢迎消息
+      if (messages.value.length === 0) {
+        messages.value.push({
+          user: '你好',
+          assistant: '你好！我是AI助手。我可以进行日常对话，也可以帮你分析新闻的真实性。请选择合适的对话模式开始我们的交谈。'
+        });
+      }
     };
 
     const closeAI = () => {
       aiOpen.value = false;
     };
 
-    const toggleCollapse = () => {
-      isCollapsed.value = !isCollapsed.value;
+    const handleNewLine = (event) => {
+      event.preventDefault();
+      userMessage.value += '\n';
     };
 
+    // 调整大小相关方法
     const startResize = (event) => {
       isResizing.value = true;
       initialMouseX.value = event.clientX;
@@ -123,9 +219,7 @@ export default {
     const resize = (event) => {
       if (!isResizing.value) return;
       const diff = event.clientX - initialMouseX.value;
-      currentWidth.value = initialWidth.value + diff;
-      if (currentWidth.value < 300) currentWidth.value = 300;
-      if (currentWidth.value > 800) currentWidth.value = 800;
+      currentWidth.value = Math.max(300, Math.min(800, initialWidth.value + diff));
     };
 
     const stopResize = () => {
@@ -134,11 +228,14 @@ export default {
       window.removeEventListener('mouseup', stopResize);
     };
 
-    // 聊天相关方法
+    // 格式化响应
     const formatResponse = (response) => {
       if (!response) return '';
-      const sections = response.split(/(?=真实性评分：|详细分析：|相关事实依据：|总结：)/g);
+      if (conversationMode.value === 'chat') {
+        return `<div class="chat-response">${response}</div>`;
+      }
 
+      const sections = response.split(/(?=真实性评分：|详细分析：|相关事实依据：|总结：)/g);
       const formattedSections = sections.map(section => {
         if (section.startsWith('真实性评分：')) {
           return section.replace(
@@ -149,7 +246,7 @@ export default {
 
         if (section.startsWith('详细分析：')) {
           const analysisContent = section
-            .replace(/详细分析：\n/, '')
+            .replace(/详细分析：\n/, ' ')
             .split(/(?=\d+\.\s)/g)
             .filter(item => item.trim())
             .map(item => `<div class="analysis-item">${item.trim()}</div>`)
@@ -184,10 +281,77 @@ export default {
       return formattedSections.join('');
     };
 
+    // 文件上传相关方法
     const triggerFileUpload = () => {
       fileInput.value.click();
     };
 
+    // 添加获取用户信息的函数
+    const getUserInfo = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          return { username: '未登录用户' };
+        }
+        const userInfo = JSON.parse(userStr);
+        return {
+          username: userInfo.username || '未登录用户'
+        };
+      } catch (e) {
+        console.error('解析用户信息失败:', e);
+        return { username: '未登录用户' };
+      }
+    };
+
+    // 修改发送消息的函数
+    const sendMessage = async () => {
+      if (!userMessage.value.trim() || loading.value) return;
+
+      loading.value = true;
+      error.value = '';
+      const currentMessage = userMessage.value.trim();
+      userMessage.value = '';
+
+      // 获取用户信息
+      const userInfo = getUserInfo();
+
+      try {
+        messages.value.push({ user: currentMessage, assistant: '正在思考中...' });
+
+        const response = await fetch('http://localhost:5000/aihelper/talk', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: currentMessage,
+            conversation_mode: conversationMode.value,
+            needs_analysis: conversationMode.value === 'analysis',
+            username: userInfo.username  // 添加用户名
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.response) {
+          messages.value[messages.value.length - 1].assistant = data.response;
+        } else {
+          throw new Error(data.error || '未知错误');
+        }
+      } catch (e) {
+        error.value = `错误: ${e.message}`;
+        if (messages.value.length > 0) {
+          messages.value[messages.value.length - 1].assistant = '处理过程中出现错误，请重试';
+        }
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // 修改文件上传函数
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
@@ -196,9 +360,13 @@ export default {
       loading.value = true;
       error.value = '';
 
+      // 获取用户信息
+      const userInfo = getUserInfo();
+
       try {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('username', userInfo.username);  // 添加用户名
 
         messages.value.push({ user: `文件：${file.name}`, assistant: '正在分析中...' });
 
@@ -229,40 +397,149 @@ export default {
       }
     };
 
-    const sendMessage = async () => {
-      if (!userMessage.value || loading.value) return;
+    // 添加导出报告方法
+    const toggleExportMenu = () => {
+      showExportMenu.value = !showExportMenu.value;
+    };
 
-      loading.value = true;
-      error.value = '';
-
-      try {
-        messages.value.push({ user: userMessage.value, assistant: '正在分析中...' });
-        const response = await fetch('http://localhost:5000/aihelper/talk', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message: userMessage.value }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    // Close export menu when clicking outside
+    onMounted(() => {
+      document.addEventListener('click', (event) => {
+        const dropdown = document.querySelector('.export-dropdown');
+        if (dropdown && !dropdown.contains(event.target)) {
+          showExportMenu.value = false;
         }
+      });
+    });
 
-        const data = await response.json();
-        if (data.response) {
-          messages.value[messages.value.length - 1].assistant = data.response;
-        } else {
-          throw new Error(data.error || '未知错误');
+    const exportReport = async (content, format) => {
+      showExportMenu.value = false;
+
+      if (format === 'html') {
+        // HTML export logic
+        const reportHTML = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>新闻真实性分析报告</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+              }
+              .report-header {
+                text-align: center;
+                margin-bottom: 30px;
+                padding: 20px;
+                background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+                color: white;
+                border-radius: 10px;
+              }
+              .score-section {
+                background: #EFF6FF;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                border: 1px solid #93C5FD;
+              }
+              .score-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              }
+              .score {
+                font-size: 32px;
+                font-weight: bold;
+                color: #2563EB;
+              }
+              .analysis-block, .evidence-block, .summary-block {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+                border: 1px solid #E5E7EB;
+              }
+              .section-title {
+                color: #2563EB;
+                font-size: 20px;
+                margin-bottom: 15px;
+              }
+              .analysis-item {
+                margin-bottom: 10px;
+                padding: 10px;
+                background: #F8FAFC;
+                border-radius: 5px;
+              }
+              .evidence-item {
+                margin-bottom: 10px;
+                padding: 10px;
+                background: #EFF6FF;
+                border-left: 3px solid #3B82F6;
+                border-radius: 5px;
+              }
+              .summary-content {
+                padding: 15px;
+                background: #F8FAFC;
+                border-radius: 5px;
+              }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #E5E7EB;
+                color: #6B7280;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="report-header">
+              <h1>新闻真实性分析报告</h1>
+              <p>生成时间：${new Date().toLocaleString()}</p>
+            </div>
+            ${formatResponse(content)}
+            <div class="footer">
+              <p>由AI助手生成的新闻真实性分析报告</p>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob([reportHTML], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `新闻分析报告_${new Date().toISOString().slice(0,10)}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else if (format === 'pdf') {
+        try {
+          // Convert content to PDF format
+          const element = document.createElement('div');
+          element.innerHTML = formatResponse(content);
+
+          const opt = {
+            margin: 1,
+            filename: `新闻分析报告_${new Date().toISOString().slice(0,10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+          };
+
+          // Use html2pdf library
+          const html2pdf = (await import('html2pdf.js')).default;
+          await html2pdf().set(opt).from(element).save();
+        } catch (error) {
+          console.error('PDF generation failed:', error);
+          // Show error message to user
+          error.value = '生成PDF失败，请稍后重试';
         }
-      } catch (e) {
-        error.value = `错误: ${e.message}`;
-        if (messages.value.length > 0) {
-          messages.value[messages.value.length - 1].assistant = '分析过程中出现错误，请重试';
-        }
-      } finally {
-        loading.value = false;
-        userMessage.value = '';
       }
     };
 
@@ -273,11 +550,11 @@ export default {
       currentWidth,
       offsetX,
       offsetY,
+      messagesContainer,
 
       // AI助手方法
       openAI,
       closeAI,
-      toggleCollapse,
       startResize,
       stopResize,
       resize,
@@ -292,7 +569,17 @@ export default {
       formatResponse,
       triggerFileUpload,
       handleFileUpload,
-      sendMessage
+      sendMessage,
+      handleNewLine,
+      getPlaceholder,
+
+      // 对话模式
+      conversationMode,
+      exportReport,
+
+      // Export menu
+      showExportMenu,
+      toggleExportMenu,
     };
   }
 };
@@ -374,7 +661,11 @@ export default {
   flex-direction: column;
   justify-content: space-between;
 }
-
+.conversation-mode {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
 .chat-container {
   flex: 1;
   display: flex;
@@ -405,51 +696,136 @@ export default {
 }
 
 .message-group {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.user-message, .assistant-message {
+.user-message {
   display: flex;
+  justify-content: flex-end; /* 将内容靠右对齐 */
   align-items: flex-start;
-  margin-bottom: 12px;
-  gap: 10px;
+  gap: 12px;
+  padding: 0 8px;
+  margin-left: auto; /* 整体靠右 */
+  width: 100%; /* 确保有足够的空间 */
+}
+
+.assistant-message {
+  display: flex;
+  justify-content: flex-start; /* 将内容靠左对齐 */
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0 8px;
+  margin-right: auto; /* 整体靠左 */
+  width: 100%;
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: #10B981;
+  background: var(--chat-gradient, linear-gradient(135deg, #10B981 0%, #059669 100%));
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border: 2px solid white;
 }
 
 .avatar i {
   color: white;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .message-content {
-  max-width: 85%;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: 16px;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  position: relative;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  max-width: 70%; /* 限制消息内容的最大宽度 */
 }
 
 .user-message .message-content {
-  background-color: #10B981;
+  background: var(--chat-gradient, linear-gradient(135deg, #10B981 0%, #059669 100%));
   color: white;
   border-top-right-radius: 4px;
-  margin-left: auto;
+  margin-right: 0; /* 移除右边距 */
 }
 
 .assistant-message .message-content {
-  background-color: #ffffff;
+  background: white;
+  border: 1px solid var(--neutral-200, #E5E7EB);
   border-top-left-radius: 4px;
-  color: #374151;
+  margin-left: 0; /* 移除左边距 */
+  color: var(--neutral-800, #1F2937);
 }
+
+.user-message .message-content::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 14px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid var(--chat-primary, #10B981);
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+.assistant-message .message-content::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 14px;
+  width: 0;
+  height: 0;
+  border-right: 8px solid var(--neutral-200, #E5E7EB);
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+
+.analysis-mode .user-message .message-content {
+  background: var(--analysis-gradient, linear-gradient(135deg, #3B82F6 0%, #2563EB 100%));
+}
+
+.analysis-mode .user-message .message-content::after {
+  border-left-color: var(--analysis-primary, #3B82F6);
+}
+
+.analysis-mode .avatar {
+  background: var(--analysis-gradient, linear-gradient(135deg, #3B82F6 0%, #2563EB 100%));
+}
+
+/* 加载动画 */
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+}
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  background: var(--neutral-400, #9CA3AF);
+  border-radius: 50%;
+  display: inline-block;
+  animation: typing 1s infinite;
+}
+
+@keyframes typing {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
 
 /* 输入区域 */
 .input-section {
@@ -560,6 +936,319 @@ textarea:focus {
   }
 
   .upload-button {
+    width: 100%;
+  }
+}
+
+.mode-label {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background-color: #f3f4f6;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-label:hover {
+  background-color: #e5e7eb;
+}
+
+.mode-label input[type="radio"] {
+  margin-right: 8px;
+}
+
+.mode-description {
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.send-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  background-color: #10B981;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.send-button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.send-button i {
+  font-size: 14px;
+}
+
+.chat-response {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 分析结果样式 */
+.score-section {
+  background-color: #f0fdf4;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.score-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.score-label {
+  font-weight: 600;
+  color: #059669;
+}
+
+.score {
+  font-size: 24px;
+  font-weight: bold;
+  color: #10B981;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title i {
+  color: #10B981;
+}
+
+.analysis-block, .evidence-block, .summary-block {
+  background-color: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.analysis-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  background-color: #f8fafc;
+  border-radius: 4px;
+}
+
+.evidence-item {
+  margin-bottom: 8px;
+  padding: 8px;
+  background-color: #f0fdf4;
+  border-radius: 4px;
+  border-left: 3px solid #10B981;
+}
+
+.summary-content {
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 4px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Add new styles for the analysis report */
+.analysis-report {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.report-header {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.report-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report-title h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.report-subtitle {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.report-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.export-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  min-width: 180px;
+  z-index: 1000;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: #1F2937;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.export-option:hover {
+  background: #F3F4F6;
+  color: #2563EB;
+}
+
+.export-option i {
+  font-size: 16px;
+  color: #2563EB;
+}
+
+.ml-2 {
+  margin-left: 8px;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.export-btn i.fa-chevron-down {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+}
+
+.export-dropdown:hover .export-btn i.fa-chevron-down {
+  transform: rotate(180deg);
+}
+
+.history-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.history-header h1 {
+  font-size: 24px;
+  color: #1F2937;
+  margin: 0;
+  text-align: center;
+}
+
+.search-bar {
+  position: relative;
+  width: 400px;
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 10px 36px 10px 16px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background-color: white;
+  box-sizing: border-box;
+}
+
+.search-bar input:focus {
+  border-color: #3B82F6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.search-bar i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .history-header {
+    padding: 0 8px;
+    gap: 12px;
+  }
+
+  .history-header h1 {
+    font-size: 20px;
+  }
+
+  .search-bar {
     width: 100%;
   }
 }

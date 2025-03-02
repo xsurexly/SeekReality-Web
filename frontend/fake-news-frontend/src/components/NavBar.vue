@@ -5,8 +5,10 @@
       class="el-menu-vertical"
       :collapse="isNavbarCollapsed"
       :collapse-transition="true"
-      text-color="#000"
+      text-color="var(--text-primary)"
       active-text-color="var(--el-color-primary)"
+      background-color= "var(--navbar-bg)"
+
     >
       <!-- Logo 区域 -->
       <router-link to="/home">
@@ -46,17 +48,43 @@
         </template>
       </el-menu-item>
 
-      <el-menu-item index="/textdetect" @click="navigateTo('/textdetect')">
-        <el-icon><svg-icon icon-name="icon-jilu" /></el-icon>
+      <el-sub-menu index="/textdetect">
+          <template #title>
+            <el-icon><svg-icon icon-name="icon-jilu" /></el-icon>
+            <span>新闻检测</span>
+          </template>
+            <el-menu-item index="/textdetect" @click="navigateTo('/textdetect')">新闻检测</el-menu-item>
+            <el-menu-item index="/detecthistory" @click="navigateTo('/detecthistory')">检测历史</el-menu-item>
+        </el-sub-menu>
+
+
+      <el-sub-menu index="/newspage">
+          <template #title>
+            <el-icon><svg-icon icon-name="icon-pinlei" /></el-icon>
+            <span>新闻阅读</span>
+          </template>
+            <el-menu-item index="/newspage" @click="navigateTo('/newspage')">新闻阅读</el-menu-item>
+            <el-menu-item index="/readhistory" @click="navigateTo('/read_history')">阅读历史</el-menu-item>
+        </el-sub-menu>
+
+      <el-menu-item index="/profile" @click="navigateTo('/profile')">
+        <el-icon><svg-icon icon-name="icon-wode"/></el-icon>
         <template #title>
-          <span>新闻检测</span>
+          <span>个人主页</span>
         </template>
       </el-menu-item>
 
-      <el-menu-item index="/newspage" @click="navigateTo('/newspage')">
-        <el-icon><svg-icon icon-name="icon-pinlei" /></el-icon>
+      <el-menu-item index="/about" @click="navigateTo('/about')">
+        <el-icon><svg-icon icon-name="icon-guanyuwomen" /></el-icon>
         <template #title>
-          <span>新闻阅读</span>
+          <span>关于我们</span>
+        </template>
+      </el-menu-item>
+
+      <el-menu-item index="/logout" @click="logout">
+        <el-icon><svg-icon icon-name="icon-tuichu" /></el-icon>
+        <template #title>
+          <span>退出登录</span>
         </template>
       </el-menu-item>
 
@@ -64,7 +92,7 @@
       <div class="user-info">
         <el-dropdown trigger="click" @visible-change="handleDropdownVisible">
           <div class="user-content">
-            <el-avatar :size="40" :src="avatar" />
+            <el-avatar :size="40" :src="avatar" style="margin-left: 15px;" />
             <span v-show="!isNavbarCollapsed" class="username">{{ user.username }}</span>
           </div>
           <template #dropdown>
@@ -144,32 +172,16 @@ const logout = () => {
   localStorage.clear()
   router.push('/login')
 }
-
 </script>
 
 <style scoped lang="scss">
-.navbar-container {
-  height: 100vh;
-  position: fixed;
-  z-index: 1000;
-}
-
-.el-menu-vertical {
-  height: 100%;
-  border-right: none;
-  
-  &:not(.el-menu--collapse) {
-    width: 200px;
-  }
+@use "@/assets/styles/_themes.scss" as *;
 
   .logo-container {
-    padding: 10px 0;
-    text-align: center;
-    
     img {
       width: 160px;
       transition: all 0.3s;
-      
+
       &.collapsed-logo {
         width: 40px;
         height: 45px;
@@ -182,37 +194,84 @@ const logout = () => {
   .hamburger-container {
     padding: 10px;
     text-align: center;
-    
+
     .collapse-icon {
       cursor: pointer;
       transition: transform 0.3s;
       margin-left: 10px;
-      
+
       &:hover {
-        color: var(--el-color-primary);
+        color: #409EFF;
       }
     }
+  }
+
+.user-info {
+
+  .user-content {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    .username {
+      margin-left: 10px;
+      font-size: 14px;
+    }
+  }
+}
+
+.navbar-container {
+  height: 100vh;
+  position: fixed;
+  z-index: 1000;
+  background-color: var(--navbar-bg);
+  color: var(--text-primary);
+}
+
+
+.el-menu-vertical {
+  height: 100%;
+  border-right: none;
+  background-color: var(--navbar-bg);
+
+
+  &:not(.el-menu--collapse) {
+    width: 200px;
+  }
+
+  .logo-container {
+    padding: 10px 0;
+    text-align: center;
+    background-color: var(--navbar-bg);
   }
 
   .user-info {
     position: absolute;
     bottom: 20px;
     width: 100%;
-    padding: 0 10px;
-    margin-left: 7px;
-    
-    .user-content {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      
-      .username {
-        margin-left: 10px;
-        font-size: 14px;
-      }
-    }
+    padding: 0 0px;
+    margin-left: 0px;
   }
 }
 
+.el-menu-item:hover {
+  background-color: var(--hover-nav);
+}
 
+:deep(.el-sub-menu__title:hover) {
+  background-color: var(--hover-nav) !important;
+}
+
+.el-dropdown-menu{
+  background-color: var(--navbar-bg);
+  color: var(--text-primary);
+}
+
+:deep(.el-dropdown-menu__item){
+  color:var(--text-primary);
+}
+
+:deep(.el-dropdown-menu__item:hover){
+  background-color: var(--hover-nav)!important;
+}
 </style>

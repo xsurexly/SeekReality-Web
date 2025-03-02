@@ -1,7 +1,7 @@
 <template>
   <div class="login-container">
     <img src="../assets/logo.png" alt="" style="width: 250px;margin-bottom: 50px;">
-    
+
     <form @submit.prevent="login">
       <label for="username"></label>
       <input type="text" v-model="username" id="username" placeholder="请输入用户名" autocomplete="off" required>
@@ -58,7 +58,8 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use "@/assets/styles/_themes.scss" as *;
 
 body, html {
   height: 100%;
@@ -67,7 +68,6 @@ body, html {
   display: flex;
   justify-content: center;  /* 水平居中 */
   align-items: center;      /* 垂直居中 */
-  background-color: #f0f4f1; /* 背景色 */
 }
 
 /* 登录容器样式 */
@@ -78,17 +78,17 @@ body, html {
   margin-bottom: 30px;
   text-align: center;
   align-items: center;
-  background-color: #fff;
+  background-color: var(--container-bg);
   padding: 60px;
   border-radius: 10px;
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-  
+  box-shadow: #b5b5b5 0px 5px 15px;
+  border: 1px solid #b5b5b5;
 }
 
 /* 标题样式 */
 .login-container h1 {
   margin-bottom: 20px;
-  color: #525252;
+  color: var(--font-color);
   font-size: 1.8rem;
   font-weight: 550;
 
@@ -98,7 +98,7 @@ body, html {
 form label {
   display: block;
   font-weight: bold;
-  color: #000000;
+  color: var(--font-color);
   margin-bottom: 5px;
   text-align: left;
 }
