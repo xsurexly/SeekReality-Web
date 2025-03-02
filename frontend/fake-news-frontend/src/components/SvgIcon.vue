@@ -1,6 +1,6 @@
 <template>
   <svg :class="svgClass" aria-hidden="true">
-      <use :xlink:href="iconClassName" :fill="color" />
+      <use :xlink:href="iconClassName" />
   </svg>
 </template>
 
@@ -18,7 +18,7 @@ const props = defineProps({
   },
   color: {
       type: String,
-      default: '#409eff'
+      default: '#ffffff'
   },
   size: {
       type: String,
@@ -40,15 +40,16 @@ const svgClass = computed(() => {
 
 
 <style scoped>
+@import "@/assets/styles/_themes.scss";
 .svg-icon {
   /* v-bind 是 Vue3 才支持的功能，可以将 CSS 的值与 js 的值绑定 */
   width: v-bind('props.size');
   height: v-bind('props.size');
   position: relative;
-  fill: currentColor;
   vertical-align: -2px;
   height:20px;
   width: 20px;
+
 }
 </style>
 

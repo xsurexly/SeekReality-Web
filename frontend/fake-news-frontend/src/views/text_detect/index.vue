@@ -3,28 +3,28 @@
     <h3 class="main-title">虚假新闻检测</h3>
     <el-tabs v-model="activeName">
       <!-- 文本检测 -->
-      <el-tab-pane label="上传文本" name="text">
-        <text-detection
-          v-model="inputText"
-          :is-detecting="isDetecting"
-          :text-result="textResult"
-          @detect="handleTextDetection"
-        />
-      </el-tab-pane>
+        <el-tab-pane label="上传文本" name="text">
+            <text-detection
+              v-model="inputText"
+              :is-detecting="isDetecting"
+              :text-result="textResult"
+              @detect="handleTextDetection"
+            />
+        </el-tab-pane>
 
       <!-- 文件检测 -->
-      <el-tab-pane label="上传文件" name="file">
-        <file-detection
-          :file-list="fileList"
-          :detection-results="detectionResults"
-          :total-progress="totalProgress"
-          :completed-count="completedCount"
-          :is-detecting="isDetecting"
-          @file-change="handleFileChange"
-          @remove-file="removeFile"
-          @start-detection="startFileDetection"
-        />
-      </el-tab-pane>
+        <el-tab-pane label="上传文件" name="file">
+            <file-detection
+            :file-list="fileList"
+            :detection-results="detectionResults"
+            :total-progress="totalProgress"
+            :completed-count="completedCount"
+            :is-detecting="isDetecting"
+            @file-change="handleFileChange"
+            @remove-file="removeFile"
+            @start-detection="startFileDetection"
+          />
+        </el-tab-pane>
     </el-tabs>
   </div>
 </template>
@@ -51,7 +51,7 @@ const detectionResults = ref([])
 
 // 进度计算
 const totalProgress = computed(() => {
-  return fileList.value.length 
+  return fileList.value.length
     ? Math.round((completedCount.value / fileList.value.length) * 100)
     : 0
 })
@@ -89,13 +89,13 @@ const removeFile = (index) => {
 const startFileDetection = async () => {
   isDetecting.value = true
   detectionResults.value = []
-  
+
   for (const [index, file] of fileList.value.entries()) {
     try {
       fileList.value[index].status = '检测中'
       const formData = new FormData()
       formData.append('file', file.raw)
-      
+
       const { data } = await axios.post('/api/file-detect', formData, {
         onUploadProgress: progressEvent => {
           const progress = Math.round(
@@ -132,22 +132,27 @@ const startFileDetection = async () => {
   max-width: 1400px;
   margin: 0 auto;
   margin-top: -20px;
+  color: var(--font-color);
 
   .main-title {
     text-align: left;
     margin-bottom: 20px;
-    color: #303133;
+
     font-size: 24px;
   }
+}
+
+:deep(.el-tabs__item){
+  color: var(--font-color);
 }
 
 @media (max-width: 768px) {
   .detect-container {
     padding: 10px;
-    
+
     .main-title {
       font-size: 20px;
-      
+
     }
   }
 }

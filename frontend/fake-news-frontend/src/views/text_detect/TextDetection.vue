@@ -1,5 +1,5 @@
 <template>
-  <el-card shadow="hover" class="text-card">
+  <el-card shadow="hover" class="text-card" style="margin: 20px;padding: 20px;width: auto;border-radius: 10px;justify-content: center;">
     <!-- 文本输入 -->
     <el-input
       v-model="inputText"
@@ -8,7 +8,7 @@
       placeholder="请输入需要检测的文本内容"
       resize="none"
     />
-    
+
     <!-- 检测按钮 -->
     <el-button
       type="primary"
@@ -53,7 +53,7 @@
                 {{ detectionResult.fraudProbability }}%
               </span>
             </el-descriptions-item>
-            
+
             <el-descriptions-item label="可疑关键词" v-if="detectionResult.keyPoints?.length">
               <el-tag
                 v-for="(word, index) in detectionResult.keyPoints"
@@ -110,7 +110,7 @@ const startTextDetection = async () => {
   try {
     isDetecting.value = true
     detectionResult.value = null
-    
+
     // 模拟进度更新
     progressInterval = setInterval(() => {
       detectionProgress.value = Math.min(detectionProgress.value + 10, 95)
@@ -121,7 +121,7 @@ const startTextDetection = async () => {
       setTimeout(() => {
         resolve({
           isFake: Math.random() > 0.5,
-          fraudProbability: Math.floor(Math.random() * 30 + 70),
+          fraudProbability: Math.floor(Math.random() * 30 + 30),
           keyPoints: ['不实信息', '夸张表述', '未经验证'],
           analysis: '检测到文本中存在多个未经证实的断言，建议结合权威信息源进行交叉验证。'
         })
@@ -146,11 +146,13 @@ const startTextDetection = async () => {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use "@/assets/styles/_themes.scss" as *;
 .text-card {
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 20px auto;
   padding: 20px;
+  background: var(--navbar-bg);
 
   .detect-btn {
     margin-top: 20px;
@@ -161,17 +163,17 @@ const startTextDetection = async () => {
 
   .result-card {
     margin-top: 25px;
-    background: #f8f9fa;
+    background: var(--navbar-bg);
 
     .result-header {
       display: flex;
       align-items: center;
       margin-bottom: 20px;
-      
+
       h4 {
         margin-right: 15px;
         font-size: 18px;
-        color: #303133;
+        color: var(--font-color);
       }
 
       .el-tag {
@@ -188,7 +190,7 @@ const startTextDetection = async () => {
       .probability-text {
         display: inline-block;
         margin-left: 15px;
-        color: #606266;
+        color: var(--font-color);
         font-weight: 500;
       }
 
@@ -198,7 +200,7 @@ const startTextDetection = async () => {
 
       .analysis-report {
         line-height: 1.8;
-        color: #606266;
+        color: var(--font-color);
         font-size: 14px;
         white-space: pre-wrap;
       }

@@ -1,0 +1,31 @@
+:root {
+  // Light theme
+  &[data-theme="light"] {
+    --bg-color: #f3f3f3;
+    --font-color: #000000;
+    --navbar-bg: #ffffff;
+    --card-bg: #ffffff;
+    --border-color: #b5b5b5;
+    --shadow-color: rgb(153, 153, 153);
+    --text-primary: #000000;
+    --text-regular: #606266;
+    --text-secondary: #909399;
+    --icon-color: #000000;
+    --hover-nav: rgb(159.5,206.5,255);
+  }
+
+  // Dark theme
+  &[data-theme="dark"] {
+    --bg-color: #000000;
+    --font-color: #ffffff;
+    --navbar-bg: #2b2b2b;
+    --card-bg: #2b2b2b;
+    --border-color: #4c4c4c;
+    --shadow-color: rgb(255, 255, 255);
+    --text-primary: #ffffff;
+    --text-regular: #d0d0d0;
+    --text-secondary: #a0a0a0;
+    --icon-color: #ffffff;
+    --hover-nav: #000000;
+  }
+}

@@ -9,7 +9,7 @@
       <!-- 团队介绍 -->
       <h2>团队使命</h2>
       <p>我们的团队汇聚了来自不同领域的专家，旨在通过先进的技术手段，为社会提供更加透明、可靠的信息。我们使用机器学习和人工智能技术，帮助用户识别虚假新闻和不实信息，提升信息消费的质量。</p>
-      
+
       <el-divider></el-divider>
 
       <!-- 公司历史、愿景、使命 -->
@@ -52,7 +52,7 @@ export default {
 <style scoped>
 .aboutUs-container {
   font-family: 'Poppins', sans-serif;
-  color: black;
+  color: var(--font-color);
   text-align: center;
   padding-bottom: 50px;
 }
