@@ -22,7 +22,6 @@
         </div>
       </div>
     </el-card>
-
     <!-- 搜索和筛选区域 -->
     <el-card class="search-card">
       <el-row :gutter="20">
@@ -46,10 +45,12 @@
             clearable
           >
             <el-option label="全部" value="" />
-            <el-option label="社会" value="society" />
-            <el-option label="科技" value="tech" />
-            <el-option label="财经" value="finance" />
-            <el-option label="体育" value="sports" />
+            <el-option label="社会" value="社会" />
+            <el-option label="科技" value="科技" />
+            <el-option label="财经" value="财经" />
+            <el-option label="体育" value="体育" />
+            <el-option label="娱乐" value="娱乐" />
+            <el-option label="其它" value="其它" />
           </el-select>
         </el-col>
         <el-col :span="8">
@@ -87,7 +88,7 @@
               <div class="news-meta">
                 <el-tag size="small" effect="plain">{{ scope.row.category }}</el-tag>
                 <span class="source">来源：{{ scope.row.source }}</span>
-                <span class="read-time">阅读时长：{{ scope.row.readTime }}分钟</span>
+                <span class="read-time">阅读时长：{{ scope.row.readtime }}秒</span>
               </div>
             </div>
           </template>
@@ -98,7 +99,7 @@
               :type="scope.row.isFinished ? 'success' : 'info'"
               effect="light"
             >
-              {{ scope.row.isFinished ? '已读完' : '未读完' }}
+              {{ scope.row.isFinished ? '未读完' : '已读完' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -144,8 +145,9 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed,onMounted } from 'vue'
+import axios from 'axios';
+import { ElMessage } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue'
 
 export default {
@@ -158,57 +160,129 @@ export default {
     const currentPage = ref(1)
     const pageSize = ref(10)
     const total = ref(100)
-
     // 统计数据
-    const totalReads = ref(328)
-    const todayReads = ref(12)
-    const favoriteCount = ref(45)
-
-    // 模拟数据
-    const records = ref([
-      {
-        id: 1,
-        date: '2024-03-20 10:30:00',
-        title: '人工智能新突破：大模型在医疗领域取得重要进展',
-        content: '近日，某研究团队开发的医疗大模型在诊断准确率方面取得显著突破，准确率达到95%以上...',
-        category: '科技',
-        source: '科技日报',
-        readTime: 5,
-        isFinished: true,
-        isFavorite: false
-      },
-      // ... 更多记录
-    ])
-
+    const totalReads = ref(0)
+    const todayReads = ref(0)
+    const favoriteCount = ref(0)
+    //获取用户信息的函数
+    const getUserInfo = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        console.log('从 localStorage 获取的用户信息:', userStr); // 添加调试信息
+        if (!userStr) {
+          return { username: '未登录用户' };
+        }
+        const userInfo = JSON.parse(userStr);
+        return {
+          username: userInfo.username || '未登录用户',
+        };
+      } catch (e) {
+        console.error('解析用户信息失败:', e);
+        return { username: '未登录用户' };
+      }
+    };
+    const userInfo = getUserInfo();
+    const username=userInfo.username;
+    // 阅读历史数据
+    const records = ref([])
+    // 获取用户的阅读历史记录
+    const fetchReadHistory = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/readhistory/user/${username}`);
+        records.value = response.data;
+        total.value = response.data.length; // 设置总记录数
+        console.log('获取的阅读历史记录:', response.data);
+        // 更新统计数据
+        await fetchFavoriteCount();
+        await fetchReadingStats();
+      } catch (error) {
+        console.error('获取阅读历史失败:', error);
+        ElMessage.error('获取阅读历史失败');
+      }
+    };
+    //获取统计数据方法
+    const fetchReadingStats = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/readhistory/reading_stats/${username}`);
+        totalReads.value = response.data.total_reads;
+        todayReads.value = response.data.today_reads;
+      } catch (error) {
+        console.error('获取阅读统计失败:', error);
+        ElMessage.error('获取阅读统计失败');
+      }
+    };
+    const fetchFavoriteCount = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/news/get_favorite_count',
+          {params:{username:username}});
+        console.log(username);
+        favoriteCount.value = response.data.favorite_count;
+      } catch (error) {
+        console.error('获取收藏量失败:', error);
+        ElMessage.error('获取收藏量失败');
+      }
+    };
     // 过滤记录
     const filteredRecords = computed(() => {
-      return records.value.filter(record => {
+      const start = (currentPage.value - 1) * pageSize.value; // 计算当前页的起始索引
+      const end = start + pageSize.value; // 计算当前页的结束索引
+      return records.value.slice(start, end).filter(record => {
         const matchKeyword = !searchKeyword.value ||
-          record.title.includes(searchKeyword.value) ||
-          record.content.includes(searchKeyword.value)
+          (record.title && record.title.includes(searchKeyword.value)) ||
+          (record.content && record.content.includes(searchKeyword.value));
         const matchCategory = !categoryFilter.value ||
-          record.category === categoryFilter.value
-        return matchKeyword && matchCategory
-      })
-    })
-
+          (record.category && record.category === categoryFilter.value);
+        return matchKeyword && matchCategory;
+      });
+    });
     // 方法
-    const refreshData = () => {
-      ElMessage.success('数据已刷新')
+    const refreshData = async () => {
+      ElMessage.info('正在刷新数据...'); // Provide feedback to the user
+      await fetchReadHistory(); // Call fetchReadHistory to refresh data
+      ElMessage.success('数据已刷新'); // Confirm the refresh
     }
-
+    //继续阅读，还没有实现
     const continueReading = (record) => {
       ElMessage.info(`继续阅读：${record.title}`)
     }
-
-    const toggleFavorite = (record) => {
-      record.isFavorite = !record.isFavorite
-      ElMessage.success(record.isFavorite ? '已添加到收藏' : '已取消收藏')
-    }
-
-    const deleteRecord = (record) => {
-      ElMessage.success(`删除记录：${record.title}`)
-    }
+    // 收藏和取消收藏
+    const toggleFavorite = async (record) => {
+      record.is_favorite = !record.is_favorite;
+      try {
+        await axios.put(`http://localhost:5000/readhistory/favorite/${record.news_id}`, {
+          is_favorite: record.is_favorite,
+          username:username
+        });
+        ElMessage.success(record.is_favorite ? '已添加到收藏' : '已取消收藏');
+        // 更新统计数据
+        await fetchFavoriteCount();
+        await fetchReadingStats();
+      } catch (error) {
+        console.error('更新收藏状态失败:', error);
+        ElMessage.error('更新收藏状态失败');
+      }
+    };
+    // 删除记录
+    const deleteRecord = async (record) => {
+      try {
+    // 获取要删除的 news_id
+        const newsId = record.news_id;
+    // 从 records 中移除所有与该 news_id 相关的记录
+        records.value = records.value.filter(r => r.news_id !== newsId); // 过滤掉所有与该 news_id 相关的记录
+    // 发送删除请求
+        await axios.delete(`http://localhost:5000/readhistory/deleterecord/${record.id}`,
+          {data:{username:username}});
+        console.log(username);
+        ElMessage.success('所有相关记录已删除');
+    // 更新统计数据
+        await fetchReadHistory ();
+        await fetchFavoriteCount();
+        await fetchReadingStats();
+      } catch (error) {
+        console.error('删除记录失败:', error);
+        ElMessage.error('删除记录失败');
+      }
+    };
 
     const handleSizeChange = (val) => {
       pageSize.value = val
@@ -217,6 +291,11 @@ export default {
     const handleCurrentChange = (val) => {
       currentPage.value = val
     }
+
+    // 组件加载时获取数据
+    onMounted(() => {
+      fetchReadHistory();
+    });
 
     return {
       searchKeyword,
