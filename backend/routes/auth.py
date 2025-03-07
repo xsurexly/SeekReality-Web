@@ -39,10 +39,10 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username')
+    email = data.get('email')
     password = data.get('password')
     
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(email=email).first()
     if user and check_password_hash(user.password, password):  # 验证密码
         return jsonify({
             'success': True,

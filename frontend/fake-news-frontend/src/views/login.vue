@@ -3,8 +3,8 @@
     <img src="../assets/logo.png" alt="" style="width: 250px;margin-bottom: 50px;">
 
     <form @submit.prevent="login">
-      <label for="username"></label>
-      <input type="text" v-model="username" id="username" placeholder="请输入用户名" autocomplete="off" required>
+      <label for="email"></label>
+      <input type="text" v-model="email" id="email" placeholder="请输入注册邮箱" autocomplete="off" required>
       <label for="password"></label>
       <input type="password" v-model="password" id="password" placeholder="请输入密码" autocomplete="off" required >
       <input type="submit" value="登录">
@@ -20,7 +20,7 @@
 export default {
   data() {
     return {
-      username: '',
+      email: '',
       password: '',
     };
   },
@@ -34,7 +34,7 @@ export default {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            username: this.username,
+            email: this.email,
             password: this.password
           })
         });
