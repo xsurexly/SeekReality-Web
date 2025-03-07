@@ -22,7 +22,7 @@
 </template>
 
 <script>
-import Navbar from './components/NavBar.vue'
+import Navbar from '@/components/NavBar.vue'
 import AIhelper from'./views/ai_helper/index.vue'
 
 export default {
@@ -41,8 +41,24 @@ export default {
     toggleNavbar() {
       this.isNavbarCollapsed = !this.isNavbarCollapsed;
     },
+
   }
 };
+
+window.ResizeObserver = class ResizeObserver extends window.ResizeObserver {
+  constructor(callback) {
+    let timer = null;
+    const debouncedCallback = function () {
+      let context = this;
+      let args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        callback.apply(context, args);
+      }, 16);
+    };
+    super(debouncedCallback);
+  }
+}
 </script>
 
 <style scoped lang="scss">

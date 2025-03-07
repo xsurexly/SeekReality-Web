@@ -1,10 +1,10 @@
 <template>
   <div class="visual-container">
     <!-- 标题区 -->
-    <div class="header-section">
-      <h1>新闻数据分析看板</h1>
-      <p class="update-time">数据更新时间：{{ currentTime }}</p>
-    </div>
+    <h3 class="main-title">数据可视化</h3>
+    <h5 class="sub-title">数据可视化展示了用户最近阅读新闻情况和上传检测新闻的情况</h5>
+    <p class="update-time">数据更新时间：{{ currentTime }}</p>
+
 
     <!-- 数据卡片容器 -->
     <div class="data-cards">
@@ -274,7 +274,6 @@ export default {
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;
 .visual-container {
-  padding: 20px;
   min-height: 100vh;
 }
 
@@ -282,11 +281,29 @@ export default {
   margin-bottom: 30px;
   padding: 20px;
   background: var(--navbar-bg);
-  border-radius: 8px;
+  border-radius: 15px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.1);
 }
 
+.main-title {
+  margin-top: 10px;
+  text-align: left;
+  margin-bottom: 10px;
+  color: var(--font-color);
+  font-size: 24px;
+}
+
+.sub-title{
+
+  text-align: left;
+  margin-bottom: 10px;
+  color: var(--font-color);
+  font-size: 14px;
+  font-weight: 400;
+}
+
 .update-time {
+  text-align: left;
   color: #909399;
   font-size: 14px;
   margin-top: 8px;
@@ -339,7 +356,7 @@ export default {
   color: var(--font-color);
   border: 1px solid #b5b5b5;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 15px;
   text-align: center;
 }
 

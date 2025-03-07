@@ -1,6 +1,7 @@
 <template>
   <div class="profile-container">
-    <h3 class="main-title">虚假新闻检测</h3>
+    <h3 class="main-title">账户设置</h3>
+    <h5 class="sub-title">管理您的个人信息以及系统设置</h5>
     <div class="tab-container">
       <el-tabs tab-position="left" class="tabs">
         <el-tab-pane label="基本信息">
@@ -20,7 +21,7 @@
 </template>
 
 <script>
-import self_intro from './self_intro.vue'
+import self_intro from './self_info.vue'
 import setting from './setting.vue'
 import security from './sys_security.vue'
 
@@ -37,7 +38,6 @@ export default {
 @use "@/assets/styles/_themes.scss" as *;
 
 .profile-container {
-  padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
   color: var(--font-color);
@@ -48,14 +48,24 @@ export default {
   padding: 40px;
   border-radius: 10px;
   box-shadow: var(--shadow-color);
-  min-height: 720px;
+  min-height: 700px;
 }
 
 .main-title {
+  margin-top: 10px;
   text-align: left;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   color: var(--font-color);
   font-size: 24px;
+}
+
+.sub-title{
+
+  text-align: left;
+  margin-bottom: 10px;
+  color: var(--font-color);
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .el-tabs {

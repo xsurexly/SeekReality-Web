@@ -1,30 +1,29 @@
 <template>
   <div class="system-settings">
-    <el-form label-width="160px">
-      <el-form-item label="主题设置">
-        <el-switch
-          v-model="darkTheme"
-          :active-value="true"
-          :inactive-value="false"
-          active-text="暗黑模式"
-          inactive-text="明亮模式"
-          @change="switchChange"
-          class="custom-switch"
-        />
-      </el-form-item>
-      <el-form-item label="消息通知">
-        <el-switch v-model="notificationEnabled" />
-      </el-form-item>
-      <el-form-item label="自动保存间隔">
-        <el-slider
-          v-model="saveInterval"
-          :step="5"
-          :min="5"
-          :max="60"
-          show-input
-        />
-      </el-form-item>
-    </el-form>
+    <div class="settings-header">
+      <h3>其他设置</h3>
+    </div>
+    <div class="theme-buttons">
+      div
+      <h3 class="main-title">系统外观</h3>
+      <h5 class="sub-title">根据偏好选择系统的外观。</h5>
+      <el-button
+        :class="['theme-button', { 'active': !darkTheme }]"
+        @click="switchTheme(false)"
+      >
+        <i class="el-icon-sunny"></i>
+        浅色主题
+        <p>Light Mode</p>
+      </el-button>
+      <el-button
+        :class="['theme-button', { 'active': darkTheme }]"
+        @click="switchTheme(true)"
+      >
+        <i class="el-icon-moon"></i>
+        深色主题
+        <p>Dark Mode</p>
+      </el-button>
+    </div>
   </div>
 </template>
 
@@ -32,19 +31,16 @@
 import { ref, onMounted } from 'vue'
 
 const darkTheme = ref(localStorage.getItem('theme') === 'dark')
-const notificationEnabled = ref(localStorage.getItem('notification') === 'true')
-const saveInterval = ref(Number(localStorage.getItem('saveInterval')) || 15)
 
-// 主题切换处理
-const switchChange = (val) => {
+const switchTheme = (val) => {
   const theme = val ? 'dark' : 'light'
   localStorage.setItem('theme', theme)
   document.documentElement.setAttribute('data-theme', theme)
+  darkTheme.value = val
 }
 
-// 组件挂载时初始化主题
 onMounted(() => {
-  switchChange(darkTheme.value)
+  switchTheme(darkTheme.value)
 })
 </script>
 
@@ -66,45 +62,108 @@ onMounted(() => {
   }
 }
 
+.system-settings{
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eeeeee;
+  padding-bottom: 10px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    margin-bottom: 10px;
+    text-align: left;
+    color:var(--font-color);
+  }
+
+  h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+    margin-bottom: 10px;
+    color:var(--font-color);
+  }
+}
+
+h3 {
+  margin: 0;
+  font-size: 18px;
+  margin-bottom: 10px;
+  text-align: left;
+  color:var(--font-color);
+}
+
+h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: left;
+  margin-bottom: 10px;
+  color:var(--font-color);
+}
+
 :deep(.system-settings){
   color: var(--text-primary)!important;
 }
 
-.custom-switch .el-switch__core {
-  width: 50px; /* 调整开关宽度 */
-  height: 25px; /* 调整开关高度 */
+.theme-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 50%;
 }
 
-.custom-switch .el-switch__core::after {
-  width: 25px; /* 调整滑块宽度 */
-  height: 25px; /* 调整滑块高度 */
-  margin-left: -25px; /* 调整滑块位置 */
-  border-radius: 50%; /* 使滑块圆形 */
-  background-color: #ffffff; /* 滑块背景颜色 */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* 添加阴影 */
-  transition: all 0.3s; /* 添加过渡效果 */
+.theme-button {
+  width: 48%;
+  padding: 20px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+
+  i {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: #999999;
+  }
+
+  &.active {
+    border-color: #409eff;
+    background-color: #ecf5ff;
+
+    i {
+      color: #409eff;
+    }
+
+    p {
+      color: #409eff;
+    }
+  }
 }
 
-.custom-switch .el-switch__core.is-checked::after {
-  margin-left: 25px; /* 调整滑块位置 */
-  background-color: #000000; /* 滑块背景颜色（激活状态） */
-}
-
-.custom-switch .el-switch__label {
-  font-size: 14px; /* 字体大小 */
-  color: #333333; /* 字体颜色 */
-}
-
-.custom-switch .el-switch__label.is-active {
-  color: #409EFF; /* 激活状态下的字体颜色 */
-}
-
-
-:deep(.el-switch__label){
+:deep(.el-button){
   color:var(--font-color)!important;
+  background: var(--bg-color);
+}
+.theme-button.active{
+  color:var(--font-color)!important;
+  background: var(--bg-color);
+}
+.el-button:hover{
+  background-color: #489dff9b;
 }
 
-:deep(.el-form-item__label){
-  color:var(--font-color)!important;
-}
 </style>

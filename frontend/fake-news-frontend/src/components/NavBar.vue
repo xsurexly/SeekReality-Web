@@ -226,6 +226,7 @@ const logout = () => {
   z-index: 1000;
   background-color: var(--navbar-bg);
   color: var(--text-primary);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 

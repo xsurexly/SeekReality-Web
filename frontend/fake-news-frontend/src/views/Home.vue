@@ -1,5 +1,5 @@
 <template>
-  <div class="home-container" style="margin-top: 20px;">
+  <div class="home-container">
     <h1 class="main-title">首页</h1>
     <el-row :gutter="30" style="margin-top: 30px;">
       <el-col :span="15">
@@ -60,7 +60,7 @@
           <div class="dashboard-item-content-notification">
             <h2>最近通知</h2>
             <div class="notification-content">
-              <el-empty :image-size="120" style="padding: 10px;">
+              <el-empty :image-size="120" style="padding: 20px;">
                 <el-button type="primary">刷新</el-button>
               </el-empty>
             </div>
@@ -174,11 +174,13 @@ export default {
 .home-container {
   text-align: center;
   background-color: var(--bg-color);
+  padding: 0;
+  margin: 0;
 }
 
 .main-title {
   text-align: left;
-  margin-bottom: 10px;
+  margin: 10px 0;
   font-weight: 600;
   font-size: 24px;
 }
@@ -327,7 +329,7 @@ export default {
 }
 
 .dashboard-item-content-notification{
-  height:300px;
+  height:355px;
 }
 
 /* 响应式设计 */
