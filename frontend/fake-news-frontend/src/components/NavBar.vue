@@ -93,9 +93,9 @@
         <el-dropdown trigger="click" @visible-change="handleDropdownVisible">
           <div class="user-content">
             <el-avatar
-              :size="50"
+              :size="45"
               :src="avatarUrl"
-              style="margin-left: 10px;"
+              style="margin-left: 10px;margin-right: 10px;"
               class="custom-avatar"
             >
               <img src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png" />
@@ -253,7 +253,7 @@ const logout = () => {
     color: var(--text-primary);
 
     .username {
-      margin-left: 0x;
+      margin-left: 10x;
       font-size: 14px;
     }
   }
