@@ -109,9 +109,10 @@ def update_toggle_history(news_id):
 
 @read_history_bp.route('/reading_stats/<string:username>', methods=['GET'])
 def get_reading_stats(username):
+    print('total_reads')
     # Count total unique reads based on news_id
     total_reads = db.session.query(func.count(func.distinct(ReadHistory.news_id))).filter_by(username=username).scalar()
-
+    print(total_reads)
     today = datetime.utcnow().date()
     # Count unique reads for today
     today_reads = db.session.query(func.count(func.distinct(ReadHistory.news_id))).filter(
@@ -119,7 +120,17 @@ def get_reading_stats(username):
         func.date(ReadHistory.created_at) == today
     ).scalar()
 
+    # Count unique reads grouped by date
+    daily_reads = db.session.query(
+        func.date(ReadHistory.created_at).label('date'),
+        func.count(func.distinct(ReadHistory.news_id)).label('count')
+    ).filter(ReadHistory.username == username).group_by(func.date(ReadHistory.created_at)).all()
+
+    # Convert daily reads to a dictionary
+    daily_reads_dict = {str(date): count for date, count in daily_reads}
+
     return jsonify({
         'total_reads': total_reads,
         'today_reads': today_reads,
+        'daily_reads': daily_reads_dict  # 返回每日阅读数量
     }), 200

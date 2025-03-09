@@ -23,9 +23,28 @@
           <div class="dashboard-item-content">
             <h2>阅读记录</h2>
             <el-calendar>
-              <template #dateCell="{ data }">
-                <div class="calendar-cell" :class="getReadingClass(data.day)">
-                  {{ data.day.split('-').slice(-1)[0] }}
+              <template #date-cell="{ data }">
+                <div class="calendar-cell">
+                  <!-- 显示日期 -->
+                  <div class="date">{{ data.day.split('-').slice(-1)[0] }}</div>
+                  <!-- 显示阅读量 -->
+                  <div class="reading-container">
+                    <div v-for="item in readingStats" :key="item.Day">
+                      <el-tag 
+                        class="reading-tag"
+                        :class="getReadingTagClass(parseInt(item.content))"
+                        effect="light" 
+                        v-if="(item.Day).indexOf(data.day.split('-').slice(2).join('-'))!=-1"
+                        @click="navigateToReadHistory(data.day, item.content)">
+                        <el-tooltip 
+                          content="当日阅读数量 (点击查看详情)" 
+                          placement="top"
+                          :show-after="300">
+                          <span>{{ item.content }}</span>
+                        </el-tooltip>
+                      </el-tag>
+                    </div>
+                  </div>
                 </div>
               </template>
             </el-calendar>
@@ -113,7 +132,9 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from "axios";
+import router from "@/router";
 
 export default {
   setup() {
@@ -124,6 +145,85 @@ export default {
       if (confidence >= 0.6) return '#E6A23C'
       return '#F56C6C'
     }
+
+    // 初始化空的阅读统计数据
+    const readingStats = ref([]);
+
+    // 获取用户信息
+    const getUserInfo = () => {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (!userStr) {
+          return { username: '未登录用户' };
+        }
+        const userInfo = JSON.parse(userStr);
+        return {
+          username: userInfo.username || '未登录用户',
+        };
+      } catch (e) {
+        console.error('解析用户信息失败:', e);
+        return { username: '未登录用户' };
+      }
+    };
+    const userInfo = getUserInfo();
+    const username = userInfo.username;
+
+    // 从后端获取阅读统计数据
+    const fetchReadingStats = async () => {
+      try {
+        const response = await axios.get(`http://localhost:5000/readhistory/reading_stats/${username}`);
+        console.log('获取的阅读统计数据:', response.data);
+
+        // 将后端返回的数据转换为日历组件所需的格式
+        if (response.data && response.data.daily_reads) {
+          const dailyReadsData = [];
+
+          // 遍历 daily_reads 对象，将其转换为数组格式
+          for (const [date, count] of Object.entries(response.data.daily_reads)) {
+            // 从日期中提取日部分 (DD)
+            const day = date.split('-')[2];
+
+            dailyReadsData.push({
+              Day: day,
+              content: count.toString()
+            });
+          }
+
+          readingStats.value = dailyReadsData;
+        }
+      } catch (error) {
+        console.error('获取阅读统计失败:', error);
+      }
+    };
+
+    // 根据阅读量返回不同的样式类
+    const getReadingTagClass = (count) => {
+      if (count >= 100) return 'reading-very-high';
+      if (count >= 50) return 'reading-high';
+      if (count >= 20) return 'reading-medium';
+      return 'reading-low';
+    };
+
+    // 跳转到阅读历史记录页面
+    const navigateToReadHistory = (date, count) => {
+      // 将日期格式化为 YYYY-MM-DD
+      const formattedDate = date;
+      
+      // 使用 router 跳转到阅读历史记录页面，并传递日期参数
+      router.push({
+        path: '/read_history',
+        query: {
+          startDate: formattedDate,
+          endDate: formattedDate,
+          count: count
+        }
+      });
+    };
+
+    // 组件挂载时获取数据
+    onMounted(() => {
+      fetchReadingStats();
+    });
 
     const recentUploads = [
       {
@@ -164,7 +264,10 @@ export default {
       todayUploads: 12,
       totalUploads: 156,
       recentUploads,
-      getConfidenceColor
+      getConfidenceColor,
+      readingStats,
+      getReadingTagClass,
+      navigateToReadHistory,
     };
   }
 };
@@ -291,8 +394,10 @@ export default {
 .calendar-cell {
   height: 100%;
   display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  padding: 2px 0;
 }
 
 .el-calendar {
@@ -340,5 +445,71 @@ export default {
   .el-col {
     span: 24;
   }
+}
+
+/* 阅读容器样式 */
+.reading-container {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 2px;
+}
+
+/* 阅读标签样式 */
+.reading-tag {
+  margin-top: 4px;
+  border-radius: 12px;
+  font-size: 12px;
+  padding: 2px 8px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.reading-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.reading-low {
+  background-color: #e1f3ff;
+  color: #409EFF;
+}
+
+.reading-medium {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.reading-high {
+  background-color: #f0f9ff;
+  color: #0050b3;
+}
+
+.reading-very-high {
+  background: linear-gradient(45deg, #1890ff, #36cfc9);
+  color: white;
+}
+
+/* 日期样式 */
+.date {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* 日历单元格样式 */
+:deep(.el-calendar-day) {
+  height: 60px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-calendar-day:hover) {
+  background-color: rgba(64, 158, 255, 0.1);
+  border-radius: 8px;
 }
 </style>

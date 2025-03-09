@@ -23,7 +23,7 @@
       </div>
     </el-card>
     <!-- 搜索和筛选区域 -->
-    <el-card class="search-card">
+    <el-card class="search-card" v-if="isDataLoaded">
       <el-row :gutter="20">
         <el-col :span="8">
           <el-input
@@ -69,10 +69,16 @@
         </el-col>
       </el-row>
     </el-card>
+    <el-card class="search-card" v-else>
+      <div class="loading-placeholder">
+        <el-skeleton :rows="3" animated />
+      </div>
+    </el-card>
 
     <!-- 阅读记录列表 -->
     <el-card class="records-card">
       <el-table
+        v-if="isDataLoaded"
         :data="filteredRecords"
         stripe
         style="width: 100%"
@@ -126,40 +132,54 @@
           </template>
         </el-table-column>
       </el-table>
+      <div v-else class="loading-placeholder">
+        <el-skeleton :rows="5" animated />
+      </div>
 
       <!-- 分页 -->
       <div class="pagination">
         <el-pagination
-          :current-page="currentPage"
-          :page-size="pageSize"
-          :total="total"
+          v-if="isDataLoaded && Number(total) > 0"
+          :current-page="Number(currentPage)"
+          :page-size="Number(pageSize)"
+          :total="Number(total)"
           :page-sizes="[10, 20, 30, 50]"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
           background
         />
+        <div v-else-if="isDataLoaded" class="no-records">
+          暂无记录
+        </div>
+        <div v-else class="loading-text">
+          加载中...
+        </div>
       </div>
     </el-card>
   </div>
 </template>
 
 <script>
-import { ref, computed,onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue'
+import { useRoute } from 'vue-router';
 
 export default {
   name: 'ReadHistory',
   setup() {
+    const route = useRoute();
+
     // 基础数据
     const searchKeyword = ref('')
     const categoryFilter = ref('')
     const dateRange = ref([])
     const currentPage = ref(1)
     const pageSize = ref(10)
-    const total = ref(100)
+    const total = ref(0)
+    const isDataLoaded = ref(false) // 控制组件渲染的状态变量
     // 统计数据
     const totalReads = ref(0)
     const todayReads = ref(0)
@@ -188,16 +208,37 @@ export default {
     // 获取用户的阅读历史记录
     const fetchReadHistory = async () => {
       try {
+        console.log('开始获取阅读历史记录...');
         const response = await axios.get(`http://localhost:5000/readhistory/user/${username}`);
-        records.value = response.data;
-        total.value = response.data.length; // 设置总记录数
-        console.log('获取的阅读历史记录:', response.data);
+        console.log('API 响应:', response);
+        
+        if (response.data && Array.isArray(response.data)) {
+          records.value = response.data;
+          // 直接设置总记录数为数字
+          total.value = Number(response.data.length);
+          console.log('获取的阅读历史记录:', response.data, '总记录数:', total.value);
+        } else {
+          console.error('API 返回的数据不是数组:', response.data);
+          records.value = [];
+          total.value = 0;
+        }
+        
         // 更新统计数据
-        await fetchFavoriteCount();
-        await fetchReadingStats();
+        await Promise.all([
+          fetchFavoriteCount(),
+          fetchReadingStats()
+        ]);
+        
+        // 标记数据已加载
+        isDataLoaded.value = true;
+        console.log('数据加载完成，isDataLoaded:', isDataLoaded.value, 'total:', total.value);
       } catch (error) {
         console.error('获取阅读历史失败:', error);
         ElMessage.error('获取阅读历史失败');
+        // 即使出错，也标记为已加载，以便显示错误状态
+        isDataLoaded.value = true;
+        records.value = [];
+        total.value = 0;
       }
     };
     //获取统计数据方法
@@ -224,22 +265,138 @@ export default {
     };
     // 过滤记录
     const filteredRecords = computed(() => {
-      const start = (currentPage.value - 1) * pageSize.value; // 计算当前页的起始索引
-      const end = start + pageSize.value; // 计算当前页的结束索引
-      return records.value.slice(start, end).filter(record => {
+      // 如果记录为空，直接返回空数组
+      if (!records.value || records.value.length === 0) {
+        return [];
+      }
+      
+      // 先根据筛选条件过滤记录
+      const filtered = records.value.filter(record => {
+        if (!record) return false;
+        
+        // 关键字筛选
         const matchKeyword = !searchKeyword.value ||
           (record.title && record.title.includes(searchKeyword.value)) ||
           (record.content && record.content.includes(searchKeyword.value));
+        
+        // 分类筛选
         const matchCategory = !categoryFilter.value ||
           (record.category && record.category === categoryFilter.value);
-        return matchKeyword && matchCategory;
+        
+        // 日期筛选
+        let matchDate = true;
+        if (dateRange.value && Array.isArray(dateRange.value) && dateRange.value.length === 2) {
+          try {
+            const recordDate = new Date(record.date);
+            const startDate = new Date(dateRange.value[0]);
+            const endDate = new Date(dateRange.value[1]);
+            
+            // 设置时间为一天的开始和结束，以确保包含整天
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            
+            matchDate = recordDate >= startDate && recordDate <= endDate;
+          } catch (error) {
+            console.error('日期比较出错:', error);
+            matchDate = true; // 出错时默认显示
+          }
+        }
+        
+        return matchKeyword && matchCategory && matchDate;
       });
+      
+      // 分页处理
+      const start = (currentPage.value - 1) * pageSize.value;
+      const end = start + pageSize.value;
+      return filtered.slice(start, end);
     });
+
+    // 计算过滤后的总记录数
+    const filteredTotal = computed(() => {
+      // 如果记录为空，直接返回0
+      if (!records.value || records.value.length === 0) {
+        return 0;
+      }
+      
+      const count = records.value.filter(record => {
+        if (!record) return false;
+        
+        // 关键字筛选
+        const matchKeyword = !searchKeyword.value ||
+          (record.title && record.title.includes(searchKeyword.value)) ||
+          (record.content && record.content.includes(searchKeyword.value));
+        
+        // 分类筛选
+        const matchCategory = !categoryFilter.value ||
+          (record.category && record.category === categoryFilter.value);
+        
+        // 日期筛选
+        let matchDate = true;
+        if (dateRange.value && Array.isArray(dateRange.value) && dateRange.value.length === 2) {
+          try {
+            const recordDate = new Date(record.date);
+            const startDate = new Date(dateRange.value[0]);
+            const endDate = new Date(dateRange.value[1]);
+            
+            // 设置时间为一天的开始和结束，以确保包含整天
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            
+            matchDate = recordDate >= startDate && recordDate <= endDate;
+          } catch (error) {
+            console.error('日期比较出错:', error);
+            matchDate = true; // 出错时默认显示
+          }
+        }
+        
+        return matchKeyword && matchCategory && matchDate;
+      }).length;
+      
+      console.log('过滤后的记录数量:', count);
+      return Number(count);
+    });
+
+    // 监听过滤条件变化，更新总记录数
+    watch([filteredTotal], (newVal) => {
+      console.log('过滤后的总记录数变化:', newVal);
+      total.value = Number(newVal);
+    });
+
+    // 监听日期范围变化
+    watch(dateRange, (newVal) => {
+      console.log('日期范围变化:', newVal);
+      // 不需要重新获取数据，只需要重新过滤
+      // 重置当前页为第一页
+      currentPage.value = 1;
+    });
+
+    // 监听搜索关键字和分类过滤器变化
+    watch([searchKeyword, categoryFilter], () => {
+      console.log('搜索条件变化');
+      // 重置当前页为第一页
+      currentPage.value = 1;
+    });
+
     // 方法
     const refreshData = async () => {
-      ElMessage.info('正在刷新数据...'); // Provide feedback to the user
-      await fetchReadHistory(); // Call fetchReadHistory to refresh data
-      ElMessage.success('数据已刷新'); // Confirm the refresh
+      try {
+        ElMessage.info('正在刷新数据...'); // Provide feedback to the user
+        // 先将数据加载状态设为 false
+        isDataLoaded.value = false;
+        // 重置筛选条件
+        searchKeyword.value = '';
+        categoryFilter.value = '';
+        dateRange.value = [];
+        currentPage.value = 1;
+        // 获取数据
+        await fetchReadHistory();
+        ElMessage.success('数据已刷新'); // Confirm the refresh
+      } catch (error) {
+        console.error('刷新数据失败:', error);
+        ElMessage.error('刷新数据失败');
+        // 即使出错，也标记为已加载，以便显示错误状态
+        isDataLoaded.value = true;
+      }
     }
     //继续阅读，还没有实现
     const continueReading = (record) => {
@@ -293,9 +450,49 @@ export default {
     }
 
     // 组件加载时获取数据
-    onMounted(() => {
-      fetchReadHistory();
+    onMounted(async () => {
+      try {
+        console.log('组件开始挂载...');
+        // 检查是否有日期参数
+        const startDate = route.query.startDate;
+        const endDate = route.query.endDate;
+        
+        if (startDate && endDate) {
+          // 设置日期范围
+          dateRange.value = [new Date(startDate), new Date(endDate)];
+          console.log('设置的日期范围:', dateRange.value);
+          
+          // 如果有阅读数量参数，显示提示信息
+          const count = route.query.count;
+          if (count) {
+            ElMessage.info(`显示 ${startDate} 的 ${count} 条阅读记录`);
+          }
+        }
+        
+        // 获取阅读历史记录
+        await fetchReadHistory();
+        
+        console.log('组件挂载完成，总记录数:', total.value, '数据加载状态:', isDataLoaded.value);
+        console.log('分页组件条件:', 'isDataLoaded:', isDataLoaded.value, 'total > 0:', Number(total.value) > 0);
+        console.log('currentPage:', currentPage.value, 'pageSize:', pageSize.value);
+      } catch (error) {
+        console.error('组件挂载时出错:', error);
+        ElMessage.error('加载数据失败，请刷新页面重试');
+        // 即使出错，也标记为已加载，以便显示错误状态
+        isDataLoaded.value = true;
+      }
     });
+
+    // 添加一个调试函数，用于检查日期格式
+    const debugDateFormat = (date) => {
+      if (!date) return 'null';
+      return {
+        original: date,
+        jsDate: new Date(date),
+        iso: new Date(date).toISOString(),
+        localeString: new Date(date).toLocaleString()
+      };
+    };
 
     return {
       searchKeyword,
@@ -308,6 +505,7 @@ export default {
       todayReads,
       favoriteCount,
       filteredRecords,
+      filteredTotal,
       refreshData,
       continueReading,
       toggleFavorite,
@@ -315,7 +513,9 @@ export default {
       handleSizeChange,
       handleCurrentChange,
       Search,
-      Refresh
+      Refresh,
+      debugDateFormat,
+      isDataLoaded
     }
   }
 }
@@ -427,6 +627,14 @@ export default {
   display: flex;
   justify-content: flex-end;
   padding: 16px 0;
+  width: 100%;
+}
+
+.no-records {
+  color: #909399;
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
 }
 
 :deep(.el-card__body) {
@@ -458,5 +666,18 @@ export default {
 
 :deep(.el-tag) {
   border-radius: 4px;
+}
+
+.loading-placeholder {
+  padding: 20px;
+  width: 100%;
+}
+
+.loading-text {
+  color: #909399;
+  font-size: 14px;
+  text-align: center;
+  width: 100%;
+  padding: 20px 0;
 }
 </style>
