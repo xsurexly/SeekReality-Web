@@ -92,7 +92,14 @@
       <div class="user-info">
         <el-dropdown trigger="click" @visible-change="handleDropdownVisible">
           <div class="user-content">
-            <el-avatar :size="40" :src="avatar" style="margin-left: 15px;" />
+            <el-avatar
+              :size="50"
+              :src="avatarUrl"
+              style="margin-left: 10px;"
+              class="custom-avatar"
+            >
+              <img src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png" />
+            </el-avatar>
             <span v-show="!isNavbarCollapsed" class="username">{{ user.username }}</span>
           </div>
           <template #dropdown>
@@ -118,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Fold, Expand } from '@element-plus/icons-vue'
 
@@ -139,15 +146,38 @@ const activeMenu = computed(() => route.path)
 
 const getStoredUser = () => {
   try {
-    const userData = JSON.parse(localStorage.getItem('user'))
-    return userData || { username: '未登录' }
+    return {
+      username: localStorage.getItem('username') || '未登录',
+      userid: localStorage.getItem('userid') || '',
+      gender: localStorage.getItem('gender') || '男'
+    }
   } catch {
-    return { username: '未登录' }
+    return { username: '未登录', userid: '', gender: '男' }
   }
 }
 
 const user = ref(getStoredUser())
-const avatar = ref(localStorage.getItem('avatar') || 'avatar.png')
+const avatar = ref(localStorage.getItem('avatar') || '')
+
+// 计算头像URL
+const avatarUrl = computed(() => {
+  if (!avatar.value) {
+    return 'https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png'
+  }
+
+  if (avatar.value.startsWith('http')) {
+    return avatar.value
+  }
+
+  return `http://localhost:5000${avatar.value}`
+})
+
+// 在组件挂载时更新用户信息
+onMounted(() => {
+  const userData = getStoredUser()
+  user.value = userData
+  avatar.value = localStorage.getItem('avatar') || ''
+})
 
 // 导航跳转
 const navigateTo = (path) => {
@@ -170,6 +200,8 @@ const goToAboutUs = () => {
 
 const logout = () => {
   localStorage.clear()
+  user.value = { username: '未登录', userid: '', gender: '男' }
+  avatar.value = ''
   router.push('/login')
 }
 </script>
@@ -206,6 +238,12 @@ const logout = () => {
     }
   }
 
+
+  .custom-avatar {
+  border: none !important;
+  background-color: transparent !important;
+}
+
 .user-info {
 
   .user-content {
@@ -213,8 +251,9 @@ const logout = () => {
     align-items: center;
     cursor: pointer;
     color: var(--text-primary);
+
     .username {
-      margin-left: 10px;
+      margin-left: 0x;
       font-size: 14px;
     }
   }

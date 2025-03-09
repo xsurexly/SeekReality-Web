@@ -3,14 +3,16 @@
     <div class="settings-header">
       <h3>其他设置</h3>
     </div>
+    <div class="setting-top">
+        <h3 class="main-title">系统外观</h3>
+        <h5 class="sub-title">根据偏好选择系统的外观。</h5>
+    </div>
     <div class="theme-buttons">
-      div
-      <h3 class="main-title">系统外观</h3>
-      <h5 class="sub-title">根据偏好选择系统的外观。</h5>
       <el-button
         :class="['theme-button', { 'active': !darkTheme }]"
         @click="switchTheme(false)"
       >
+        <el-icon><svg-icon icon-name="icon-mingliangmoshi" /></el-icon>
         <i class="el-icon-sunny"></i>
         浅色主题
         <p>Light Mode</p>
@@ -19,6 +21,7 @@
         :class="['theme-button', { 'active': darkTheme }]"
         @click="switchTheme(true)"
       >
+        <el-icon><svg-icon icon-name="icon-anheimoshi" /></el-icon>
         <i class="el-icon-moon"></i>
         深色主题
         <p>Dark Mode</p>
@@ -94,22 +97,30 @@ onMounted(() => {
   }
 }
 
-h3 {
-  margin: 0;
-  font-size: 18px;
-  margin-bottom: 10px;
-  text-align: left;
-  color:var(--font-color);
+.setting-top {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    margin-bottom: 10px;
+    text-align: left;
+    color:var(--font-color);
+  }
+
+  h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+    color:var(--font-color);
+  }
 }
 
-h5 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-  text-align: left;
-  margin-bottom: 10px;
-  color:var(--font-color);
-}
 
 :deep(.system-settings){
   color: var(--text-primary)!important;
@@ -122,9 +133,11 @@ h5 {
 }
 
 .theme-button {
-  width: 48%;
+  width: 60%;
+  height: 150%;
   padding: 20px;
   border: 1px solid #ebeef5;
+
   border-radius: 8px;
   cursor: pointer;
   text-align: center;
@@ -152,15 +165,20 @@ h5 {
       color: #409eff;
     }
   }
+
+  .el-icon{
+    margin-bottom: 0;
+    margin-right: 10px;
+  }
 }
 
 :deep(.el-button){
   color:var(--font-color)!important;
-  background: var(--bg-color);
+  background-color: var(--navbar-bg);
 }
 .theme-button.active{
   color:var(--font-color)!important;
-  background: var(--bg-color);
+  background-color: var(--navbar-bg);
 }
 .el-button:hover{
   background-color: #489dff9b;

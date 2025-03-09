@@ -45,6 +45,9 @@ export default {
         if (data.success) {
           console.log('登录成功，用户信息：', data.user);
           localStorage.setItem('user', JSON.stringify(data.user)); // 保存用户信息到 localStorage
+          localStorage.setItem('userid', data.user.userid);
+          localStorage.setItem('username', data.user.username);
+          localStorage.setItem('email', data.user.email);  // 存储邮箱
           this.$router.push('/home'); // 登录成功后跳转到主页
         } else {
           alert(data.message);
@@ -125,7 +128,7 @@ input[type="password"]:focus {
 
 /* 按钮样式 */
 input[type="submit"] {
-  background-color: #409EFF; /* 按钮绿色背景 */
+  background-color: #409EFF;
   color: white;
   padding: 12px;
   width: 100%;

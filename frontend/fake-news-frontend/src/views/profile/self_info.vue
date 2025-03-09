@@ -2,47 +2,55 @@
   <div class="user-info">
     <div class="info-header">
       <h3>基本信息</h3>
-      <h5>请及时更新信息以便找回密码，在第一次登陆后请注意填写邮箱！</h5>
+      <h5>请及时更新信息以便找回密码！</h5>
     </div>
     <el-row :gutter="20" class="info-content">
       <el-col :span="6" class="avatar-section">
         <div class="avatar-card">
-          <el-avatar
-            :size="100"
-            :src="avatarUrl"
-            class="user-avatar"
+          <el-upload
+            class="avatar-uploader"
+            :action="`http://localhost:5000/profile/upload-avatar`"
+            :headers="uploadHeaders"
+            :data="uploadData"
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+            :on-error="handleAvatarError"
+            :before-upload="beforeAvatarUpload"
+            :disabled="!isEditing"
           >
-            <img
-              src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png"
-              alt="默认头像"
-            />
-          </el-avatar>
+            <el-avatar
+              :size="150"
+              :src="avatarUrl"
+              class="user-avatar"
+            >
+              <img src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png" />
+            </el-avatar>
+            <el-button
+              type="primary"
+              :disabled="!isEditing"
+              class="upload-button"
+            >
+            <el-icon><svg-icon icon-name="icon-xiugai" /></el-icon>
+            </el-button>
+          </el-upload>
           <div class="user-info-text">
-            <p>{{ form.username }}</p>
-            <p>{{ form.userId }}</p>
-            <p>Level: {{ form.level }}</p>
+            <p>{{ user.username }}</p>
+            <p>{{ user.userid }}</p>
           </div>
         </div>
       </el-col>
       <el-col :span="18" class="form-section">
-        <el-form :model="form" label-width="100px">
-          <el-form-item label="邮箱">
+        <el-form :model="user" label-width="100px">
+          <el-form-item label="用户名">
             <el-input
-              v-model="form.email"
+              v-model="user.username"
               :disabled="!isEditing"
-              placeholder="请输入邮箱"
-            />
-          </el-form-item>
-          <el-form-item label="昵称">
-            <el-input
-              v-model="form.nickname"
-              :disabled="!isEditing"
-              placeholder="请输入昵称"
+              placeholder="请输入用户名"
             />
           </el-form-item>
           <el-form-item label="性别">
             <el-select
-              v-model="form.gender"
+              v-model="user.gender"
               :disabled="!isEditing"
               placeholder="请选择性别"
             >
@@ -76,43 +84,149 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 
+const getStoredUser = () => {
+  try {
+    // 从localStorage获取完整的用户信息
+    const storedUsername = localStorage.getItem('username')
+    const storedUserid = localStorage.getItem('userid')
+    const storedGender = localStorage.getItem('gender')
+
+    // 如果没有用户信息，返回默认值
+    if (!storedUsername || !storedUserid) {
+      return { username: '未登录', userid: '', gender: '男' }
+    }
+
+    return {
+      username: storedUsername,
+      userid: storedUserid,
+      gender: storedGender || '男'
+    }
+  } catch {
+    return { username: '未登录', userid: '', gender: '男' }
+  }
+}
+
 const isEditing = ref(false)
-const avatarUrl = ref(localStorage.getItem('avatar') || '')
+const user = ref(getStoredUser())
+const avatar = ref(localStorage.getItem('avatar') || 'avatar.png')
 
-const form = reactive({
-  username: localStorage.getItem('username') || '王小二',
-  userId: localStorage.getItem('userId') || '0000001',
-  level: localStorage.getItem('level') || '0',
-  email: localStorage.getItem('email') || '',
-  nickname: localStorage.getItem('nickname') || '',
-  gender: localStorage.getItem('gender') || '男'
+const genders = ['男', '女', '其他']
+
+onMounted(() => {
+  // 重新获取用户信息
+  const userData = getStoredUser()
+  user.value = userData
+
+  // 如果没有用户信息，可以考虑重定向到登录页面
+  if (!userData.username || userData.username === '未登录') {
+    ElMessage.warning('请先登录')
+    // 可以添加重定向逻辑
+    // router.push('/login')
+  }
 })
-
-const genders =([' ref男', '女', '其他'])
 
 const handleEdit = () => {
   isEditing.value = true
 }
 
-const handleSave = () => {
-  // 保存逻辑
-  Object.keys(form).forEach(key => {
-    localStorage.setItem(key, form[key])
-  })
-  ElMessage.success('信息保存成功')
-  isEditing.value = false
+const handleSave = async () => {
+  try {
+    // 打印检查发送的数据
+    console.log('Sending data:', {
+      userid: user.value.userid,
+      username: user.value.username,
+      gender: user.value.gender
+    });
+
+    const response = await fetch('http://localhost:5000/profile/update-profile', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userid: user.value.userid,
+        username: user.value.username,
+        gender: user.value.gender
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // 更新本地存储
+      localStorage.setItem('username', user.value.username);
+      localStorage.setItem('gender', user.value.gender);
+      localStorage.setItem('userid', user.value.userid); // 确保也存储 userid
+      ElMessage.success('信息保存成功');
+      isEditing.value = false;
+    } else {
+      ElMessage.error(data.message || '保存失败');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    ElMessage.error('网络错误，请稍后重试');
+  }
 }
 
 const handleCancel = () => {
   // 恢复原始数据
-  form.username = localStorage.getItem('username') || '王小二'
-  form.email = localStorage.getItem('email') || ''
-  form.nickname = localStorage.getItem('nickname') || ''
-  form.gender = localStorage.getItem('gender') || '男'
+  user.value.username = localStorage.getItem('username') || '小星'
+  user.value.gender = localStorage.getItem('gender') || '男'
   isEditing.value = false
+}
+
+// 计算上传需要的数据
+const uploadData = computed(() => ({
+  userid: user.value.userid
+}))
+
+// 设置上传请求头
+const uploadHeaders = {
+  'Accept': 'application/json'
+}
+
+// 计算头像URL
+const avatarUrl = computed(() => {
+  if (avatar.value && avatar.value.startsWith('http')) {
+    return avatar.value
+  }
+  return avatar.value ? `http://localhost:5000${avatar.value}` : 'https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png'
+})
+
+// 处理头像上传成功
+const handleAvatarSuccess = (response) => {
+  if (response.message === '头像上传成功') {
+    avatar.value = response.avatar
+    localStorage.setItem('avatar', response.avatar)
+    ElMessage.success('头像上传成功')
+  } else {
+    ElMessage.error('头像上传失败')
+  }
+}
+
+// 处理头像上传错误
+const handleAvatarError = (error) => {
+  console.error('Avatar upload error:', error)
+  ElMessage.error('头像上传失败，请重试')
+}
+
+// 上传前的验证
+const beforeAvatarUpload = (file) => {
+  const isImage = ['image/jpeg', 'image/png'].includes(file.type)
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传 JPG/PNG 格式的图片!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB!')
+    return false
+  }
+  return true
 }
 </script>
 
@@ -121,7 +235,7 @@ const handleCancel = () => {
 
 .user-info {
   padding: 20px;
-  
+
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
@@ -162,7 +276,6 @@ const handleCancel = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
   border-right: 1px solid #eeeeee;
 
   .avatar-card {
@@ -173,11 +286,42 @@ const handleCancel = () => {
     margin-top: 10px;
 
     p {
-      margin: 5px 0;
+      margin-top: -20px;
       font-size: 16px;
       color:var(--font-color)
     }
   }
+}
+
+.avatar-uploader {
+  position: relative;
+  display: inline-block;
+}
+
+.upload-button {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  transform: translate(50%, -50%);
+  padding:10px;
+  font-size: 12px;
+  z-index: 1;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+:deep(.el-button.is-disabled){
+  background-color: #fff;
+}
+
+:deep(.el-button.is-disabled:hover){
+  background-color: #fff;
+}
+
+.user-avatar {
+  cursor: pointer;
+  border: none !important;
+  background-color: transparent !important;
 }
 
 .form-section {
@@ -185,7 +329,7 @@ const handleCancel = () => {
   padding: 0 20px;
 
   .el-form {
-    width: 100%;
+    width: 60%;
   }
 }
 
@@ -194,7 +338,7 @@ const handleCancel = () => {
 }
 
 :deep(.el-form-item__label) {
-  font-weight: bold;
-  color:var(--font-color)
+  color:var(--font-color);
+  margin-top:10px ;
 }
 </style>

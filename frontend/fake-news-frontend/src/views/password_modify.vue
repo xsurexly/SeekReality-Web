@@ -1,225 +1,278 @@
 <template>
   <div class="findpassword-container">
-    <img src="../assets/logo.png" alt="" style="width: 250px; margin-bottom: 50px;">
-    
-    <form @submit.prevent="submitForm">
-      <label for="email"></label>
-      <input type="email" v-model="email" id="email" placeholder="请输入邮箱" autocomplete="off" required>
-      
-      <label for="username"></label>
-      <input type="text" v-model="username" id="username" placeholder="请输入用户名" autocomplete="off" required>
+    <img src="../assets/logo.png" alt="Logo" style="width: 250px; margin-bottom: 50px;"/>
 
-      <label for="password"></label>
-      <input type="password" v-model="password" id="password" placeholder="请输入新密码" autocomplete="off" required>
+    <el-form
+      :model="form"
+      label-width="120px"
+      :rules="rules"
+      ref="formRef"
+    >
+      <el-form-item  prop="email" class="my-el-form">
+        <el-input
+          v-model="form.email"
+          type="text"
+          placeholder="请输入注册邮箱"
+        />
+      </el-form-item>
+      <el-form-item  prop="newPassword" class="my-el-form">
+        <el-input
+          v-model="form.newPassword"
+          type="password"
+          show-password
+          placeholder="请输入新密码"
+        />
+      </el-form-item>
+      <el-form-item  prop="confirmPassword" class="my-el-form">
+        <el-input
+          v-model="form.confirmPassword"
+          type="password"
+          show-password
+          placeholder="请确认新密码"
+        />
+      </el-form-item>
+      <el-form-item class="my-el-form">
+        <el-button
+          type="primary"
+          @click="submitForm"
+        >
+          找回密码
+        </el-button>
+      </el-form-item>
+    </el-form>
 
-      <label for="comfirmCode"></label>
-      <div class="verification-container">
-        <input type="text" v-model="comfirmCode" id="comfirmCode" placeholder="请输入验证码" autocomplete="off" required>
-        <button @click.prevent="sendVerificationCode" class="send-code-btn">发送验证码</button>
-      </div>
-      
-      <input type="submit" value="找回密码">
-    </form>
+    <el-dialog
+      v-model="dialogVisible"
+      title="验证身份"
+      width="40%"
+    >
+      <el-form :model="verificationForm" :rules="verificationRules" ref="verificationFormRef">
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="verificationForm.email" disabled />
+        </el-form-item>
+        <el-form-item label="验证码" prop="verificationCode">
+          <div style="display: flex; gap: 10px;">
+            <el-input v-model="verificationForm.verificationCode" placeholder="请输入验证码" />
+            <el-button type="primary" @click="sendVerificationCode" :disabled="cooldown > 0">
+              {{ cooldown > 0 ? `${cooldown}秒后重试` : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmPasswordChange">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
 
-    <p>
+    <p class="mt-3">
       <router-link to="/login" class="login-link">前往登录</router-link>
     </p>
   </div>
 </template>
 
+<script setup>
+import { ref, reactive } from 'vue'
+import { ElMessage } from 'element-plus'
 
-<script>
-export default {
-  data() {
-    return {
-      username: '',
-      password: '',
-      email: '',
-      comfirmCode: '',
-      verificationCodeSent: false, // 判断验证码是否已发送
-    };
-  },
-  methods: {
-    async submitForm() {
-      if (!this.verificationCodeSent) {
-        alert('请先发送验证码');
-        return;
-      }
+const dialogVisible = ref(false)
+const cooldown = ref(0)
+const form = reactive({
+  email:"",
+  newPassword: '',
+  confirmPassword: '',
+})
 
-      try {
-        const response = await fetch('http://127.0.0.1:5000/auth/find-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: this.username,
-            password: this.password,
-            email: this.email,
-            verificationCode: this.comfirmCode,
-          }),
-        });
+const verificationForm = reactive({
+  email: '',
+  verificationCode: '',
+})
 
-        const data = await response.json();
+const formRef = ref(null)
+const verificationFormRef = ref(null)
 
-        if (data.success) {
-          alert('密码修改成功');
-          this.$router.push('/login');
-        } else {
-          alert(data.message);
-        }
-      } catch (error) {
-        console.error('请求失败：', error);
-        alert('找回密码失败，请稍后再试');
-      }
-    },
+const verificationRules = {
+  verificationCode: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { min: 6, max: 6, message: '验证码长度应为6位', trigger: 'blur' }
+  ]
+}
 
-    async sendVerificationCode() {
-      console.log('发送验证码按钮被点击');
-      try {
-        const response = await fetch('http://127.0.0.1:5000/auth/request-verification-code', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            username: this.username,
-            email: this.email,
-          }),
-        });
+const validatePass = (rule, value, callback) => {
+  if (value === '') {
+    callback(new Error('请输入密码'))
+  } else if (value.length < 6) {
+    callback(new Error('密码长度不能小于6位'))
+  } else {
+    if (form.confirmPassword !== '') {
+      formRef.value.validateField('confirmPassword')
+    }
+    callback()
+  }
+}
 
-        const data = await response.json();
+const validateConfirmPass = (rule, value, callback) => {
+  if (value === '') {
+    callback(new Error('请再次输入密码'))
+  } else if (value !== form.newPassword) {
+    callback(new Error('两次输入密码不一致'))
+  } else {
+    callback()
+  }
+}
 
-        if (data.success) {
-          alert('验证码已发送');
-          this.verificationCodeSent = true;
-        } else {
-          alert(data.message);
-        }
-      } catch (error) {
-        console.error('请求失败：', error);
-        alert('验证码发送失败，请稍后再试');
-      }
+const rules = reactive({
+  email: [
+    { required: true, message: '邮箱不能为空', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  newPassword: [
+    { validator: validatePass, trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { validator: validateConfirmPass, trigger: 'blur' }
+  ]
+})
+
+const submitForm = () => {
+  formRef.value.validate(valid => {
+    if (valid) {
+      dialogVisible.value = true,
+      verificationForm.email = form.email
+    }
+  })
+}
+
+
+const sendVerificationCode = async () => {
+  try {
+    // 基础验证
+    if (!form.email) {
+      ElMessage.warning('请先填写邮箱和用户名')
+      return
+    }
+
+    const response = await fetch('http://localhost:5000/auth/request-verification-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: form.email,
+      })
+    })
+
+    const data = await response.json()
+    if (data.success) {
+      ElMessage.success('验证码已发送')
+      cooldown.value = 60
+      const timer = setInterval(() => {
+        cooldown.value--
+        if (cooldown.value <= 0) clearInterval(timer)
+      }, 1000)
+    } else {
+      ElMessage.error(data.message)
+    }
+  } catch (error) {
+    ElMessage.error('发送验证码失败')
+  }
+}
+
+const confirmPasswordChange = async () => {
+  try {
+    // 表单验证
+    await formRef.value.validate()
+
+    const response = await fetch('http://localhost:5000/auth/find-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: verificationForm.email,
+        newPassword: form.newPassword,
+        verificationCode: verificationForm.verificationCode
+      })
+    })
+
+    const data = await response.json()
+    if (data.success) {
+      ElMessage.success('密码修改成功')
+      formRef.value.resetFields()
+      // 清除验证码输入
+      form.verificationCode = ''
+    } else {
+      ElMessage.error(data.message)
+    }
+  } catch (error) {
+    if (error.name !== 'Error') {
+      ElMessage.error('表单验证未通过')
     }
   }
-};
+}
 </script>
 
 <style scoped>
-body, html {
-  height: 100%;
-  margin: 0;
-  font-family: 'Arial', sans-serif;
-  display: flex;
-  justify-content: center;  /* 水平居中 */
-  align-items: center;      /* 垂直居中 */
-  background-color: #f0f4f1; /* 背景色 */
-
-}
-
-/* 登录容器样式 */
 .findpassword-container {
-  width: 350px;
-  height: 100%;
-  margin: 0px auto;
-  margin-top: 100px;
-  margin-bottom: 30px;
+  width: 400px;
+  margin: 0 auto;
+  margin-top: 80px;
+  padding: 60px;
+  background-color: var(--container-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #b5b5b5;
   text-align: center;
   align-items: center;
-  background-color: #fff;
-  padding: 60px;
-  border-radius: 5px;
-  box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
-/* 表单标签样式 */
-form label {
-  display: block;
-  font-weight: bold;
-  color: #000000;
-  margin-bottom: 5px;
-  text-align: left;
-}
 
-/* 输入框样式 */
-input[type="text"],
-input[type="email"],
-input[type="password"] {
+:deep(.el-input__wrapper){
+
   width: 100%;
   padding: 10px;
-  margin-bottom: 25px;
+  margin-top: 25px;
   border: 1px solid #b5b5b5;
   border-radius: 5px;
   font-size: 1rem;
   box-sizing: border-box;
 }
 
-/* 输入框聚焦效果 */
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus {
+.el-form-item.my-el-form >:last-child {
+   margin-left:0px !important;
+}
+
+.el-input:focus{
   outline: none;
   border-color: #409EFF;
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }
 
-/* 验证码输入框和按钮容器样式 */
-.verification-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.verification-container input {
-  width: 60%;  /* 使输入框占大部分空间 */
-  margin-top: 10px;
-  margin-bottom: 10px;
-  margin-right: 30px;  /* 输入框和按钮之间留一些空间 */
-}
-
-.send-code-btn {
-  background-color: #409EFF; /* 按钮绿色背景 */
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.send-code-btn:hover {
-  background-color: rgb(121.3, 187.1, 255); /* 悬停时按钮变深绿色 */
-}
-
-.send-code-btn:active {
-  background-color: rgb(121.3, 187.1, 255);
-}
-
-/* 按钮样式 */
-input[type="submit"] {
-  background-color: #409EFF; /* 按钮绿色背景 */
+:deep(.el-button){
+  background-color: #409EFF;
   color: white;
   padding: 12px;
   width: 100%;
+  height: 40px;
   border: none;
   border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
-/* 按钮悬停效果 */
-input[type="submit"]:hover {
+:deep(.el-button:hover) {
   background-color: rgb(121.3, 187.1, 255); /* 悬停时按钮变深绿色 */
 }
-input[type="submit"]:active {
+:deep(.el-button:active) {
   background-color: rgb(121.3, 187.1, 255);
 }
 
 .login-link {
-  color: #409EFF;
+  color: #409eff;
   text-decoration: none;
   float: right;
 }
@@ -228,23 +281,7 @@ input[type="submit"]:active {
   text-decoration: underline;
 }
 
-/* 响应式支持 */
-@media (max-width: 400px) {
-  .findpassword-container {
-    width: 90%;
-    padding: 20px;
-  }
-
-  input[type="submit"] {
-    font-size: 0.9rem;
-  }
-
-  .verification-container input {
-    width: 70%;  /* 在小屏幕上调整输入框的宽度 */
-  }
-
-  .verification-container .send-code-btn {
-    padding: 8px 12px; /* 调整按钮的大小 */
-  }
+.mt-3 {
+  margin-top: 15px;
 }
 </style>

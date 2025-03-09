@@ -48,7 +48,7 @@ export default {
   padding: 40px;
   border-radius: 10px;
   box-shadow: var(--shadow-color);
-  min-height: 700px;
+  min-height: 250px;
 }
 
 .main-title {

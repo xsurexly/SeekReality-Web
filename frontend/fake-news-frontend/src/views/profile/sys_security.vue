@@ -60,21 +60,72 @@
         </el-button>
       </el-form-item>
     </el-form>
+
+    <el-dialog
+      v-model="dialogVisible"
+      title="验证身份"
+      width="40%"
+    >
+      <el-form :model="verificationForm" :rules="verificationRules" ref="verificationFormRef">
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="verificationForm.email" disabled />
+        </el-form-item>
+        <el-form-item label="验证码" prop="verificationCode">
+          <div style="display: flex; gap: 10px;">
+            <el-input v-model="verificationForm.verificationCode" placeholder="请输入验证码" />
+            <el-button type="primary" @click="sendVerificationCode" :disabled="cooldown > 0">
+              {{ cooldown > 0 ? `${cooldown}秒后重试` : '发送验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmPasswordChange">确认修改</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive,onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const isEditingPassword = ref(false)
+const dialogVisible = ref(false)
+const cooldown = ref(0)
 const form = reactive({
   currentPassword: '',
   newPassword: '',
   confirmPassword: ''
 })
 
+const verificationForm = reactive({
+  email: '',
+  verificationCode: '',
+  username:'',
+})
+
+onMounted(() => {
+  verificationForm.email = localStorage.getItem('email') || '';  // 确保获取邮箱
+  verificationForm.username =  localStorage.getItem('username');
+  console.log('获取到的邮箱:', verificationForm.email);  // 调试输出
+  console.log('获取到的用户名:', verificationForm.username);  // 调试输出
+
+})
+
 const formRef = ref(null)
+const verificationFormRef = ref(null)
+
+// 验证规则
+const verificationRules = {
+  verificationCode: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { min: 6, max: 6, message: '验证码长度应为6位', trigger: 'blur' }
+  ]
+}
 
 const validatePass = (rule, value, callback) => {
   if (value === '') {
@@ -118,12 +169,84 @@ const handleEditPassword = () => {
 const submitForm = () => {
   formRef.value.validate(valid => {
     if (valid) {
-      // 这里应该调用修改密码的API
-      ElMessage.success('密码修改成功')
-      formRef.value.resetFields()
-      isEditingPassword.value = false
+      dialogVisible.value = true
     }
   })
+}
+
+// 发送验证码
+const sendVerificationCode = async () => {
+  try {
+    const response = await fetch('http://localhost:5000/auth/request-verification-code', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: verificationForm.email,
+      })
+    })
+
+    const data = await response.json()
+    if (data.success) {
+      ElMessage.success('验证码已发送')
+      // 开始倒计时
+      cooldown.value = 60
+      const timer = setInterval(() => {
+        cooldown.value--
+        if (cooldown.value <= 0) {
+          clearInterval(timer)
+        }
+      }, 1000)
+    } else {
+      ElMessage.error(data.message)
+    }
+  } catch (error) {
+    ElMessage.error('发送验证码失败')
+  }
+}
+
+// 确认修改密码
+const confirmPasswordChange = async () => {
+  try {
+    console.log('准备修改密码请求')
+    console.log('请求数据:', {
+      email: verificationForm.email,
+      username: verificationForm.username,
+      currentPassword: form.currentPassword,
+      newPassword: form.newPassword,
+      verificationCode: verificationForm.verificationCode
+    })
+
+    const response = await fetch('http://localhost:5000/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: verificationForm.email,
+        username: localStorage.getItem('username'),
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
+        verificationCode: verificationForm.verificationCode
+      })
+    })
+
+    const data = await response.json()
+    console.log('修改密码响应:', data)
+
+    if (data.success) {
+      ElMessage.success('密码修改成功')
+      dialogVisible.value = false
+      isEditingPassword.value = false
+      formRef.value.resetFields()
+      verificationFormRef.value.resetFields()
+    } else {
+      ElMessage.error(data.message)
+    }
+  } catch (error) {
+    ElMessage.error('修改密码失败')
+  }
 }
 
 const handleCancelPassword = () => {
