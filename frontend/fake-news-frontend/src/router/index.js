@@ -87,12 +87,16 @@ const routes = [
     }
   },
   {
-  path:'/newspage',
-  name:'newspage',
-  component: Newspage,
-  meta: {
-    keepAlive: true
-    }
+    path:'/newspage',
+    name:'news',
+    component: Newspage,
+    meta: {
+      keepAlive: true
+    },
+    props: (route) => ({
+      newsId: route.query.newsId,
+      autoOpen: route.query.autoOpen
+    })
   },
   {
     path:'/detecthistory',

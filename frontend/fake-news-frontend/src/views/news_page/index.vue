@@ -160,9 +160,10 @@
 <script>
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { Search, Picture } from '@element-plus/icons-vue';
 import debounce from 'lodash/debounce';
+import { useRoute, useRouter } from 'vue-router';
 
 export default {
   name: 'NewsPage',
@@ -170,7 +171,19 @@ export default {
     Search,
     Picture
   },
-  setup() {
+  props: {
+    newsId: {
+      type: String,
+      default: ''
+    },
+    autoOpen: {
+      type: String,
+      default: 'false'
+    }
+  },
+  setup(props) {
+    const route = useRoute();
+    const router = useRouter();
     const news = ref([]);
     const selectedNews = ref(null);
     const relatedNews = ref([]);
@@ -182,12 +195,14 @@ export default {
     const sourceStats = ref([]);
     const defaultImage = 'http://localhost:8080/default-news.jpg';
     const dialogVisible = ref(false);
+    const readingTime = ref(0);
+    let readingInterval = null;
 
     //获取用户信息的函数
     const getUserInfo = () => {
       try {
         const userStr = localStorage.getItem('user');
-        console.log('从 localStorage 获取的用户信息:', userStr); // 添加调试信息
+        console.log('从 localStorage 获取的用户信息:', userStr);
         if (!userStr) {
           return { username: '未登录用户' };
         }
@@ -211,12 +226,24 @@ export default {
           query: searchQuery.value,
           source: selectedSource.value,
           date_range: dateRange.value,
-          username:username
+          username: username
         };
 
-        const response = await axios.get('http://localhost:5000/news/get_news', { params});
+        const response = await axios.get('http://localhost:5000/news/get_news', { params });
         news.value = response.data.news;
         sources.value = response.data.sources;
+
+        // 如果有 newsId 参数，查找并显示对应的新闻
+        const targetNewsId = props.newsId || route.query.newsId;
+        if (targetNewsId) {
+          const targetNews = news.value.find(item => item.id === targetNewsId);
+          if (targetNews) {
+            await showNewsDetail(targetNews);
+          } else {
+            // 如果在当前列表中找不到，直接从服务器获取
+            await showNewsDetail(null);
+          }
+        }
       } catch (error) {
         console.error('获取新闻失败:', error);
         ElMessage.error('获取新闻列表失败');
@@ -224,57 +251,109 @@ export default {
         loading.value = false;
       }
     };
-    const readingTime = ref(0); // 用于记录阅读时间
-    let readingInterval = null; // 用于存储定时器
+
     // 获取新闻详情
     const showNewsDetail = async (newsItem) => {
       console.log('Selected news item:', newsItem);
       try {
         loading.value = true;
-        selectedNews.value = newsItem; // 设置选中的新闻
+        let targetNews = newsItem;
+
+        // 如果没有传入 newsItem，但有 newsId，则从服务器获取新闻详情
+        if (!newsItem && (props.newsId || route.query.newsId)) {
+          const newsId = props.newsId || route.query.newsId;
+          const response = await axios.get(`http://localhost:5000/news/news/${newsId}`);
+          if (response.data && response.data.news) {
+            targetNews = response.data.news;
+          } else {
+            throw new Error('未找到指定新闻');
+          }
+        }
+
+        if (!targetNews) {
+          throw new Error('新闻信息不存在');
+        }
+
+        selectedNews.value = targetNews;
         dialogVisible.value = true;
 
-    // 记录阅读历史
+        // 更新 URL，但不触发新的导航
+        router.replace({
+          path: '/newspage',
+          query: { 
+            ...route.query,
+            newsId: targetNews.id,
+            autoOpen: 'true'
+          }
+        });
+
+        // 记录阅读历史
         const readHistoryData = {
-        news_id: newsItem.id,
-        read_time: 0,
-        is_finished: false,
-        is_favorite: false
-      };
-    // 发送初始阅读记录
-        await axios.post(`http://localhost:5000/readhistory/read_history/${newsItem.id}`, {readHistoryData,username:username});
+          news_id: targetNews.id,
+          read_time: 0,
+          is_finished: false,
+          is_favorite: false
+        };
 
-    // 开始计时
+        // 发送初始阅读记录
+        await axios.post(`http://localhost:5000/readhistory/read_history/${targetNews.id}`, {
+          readHistoryData,
+          username: username
+        });
+
+        // 开始计时
         readingInterval = setInterval(() => {
-        readingTime.value += 1;
-      }, 1000);
+          readingTime.value += 1;
+        }, 1000);
 
-    // 获取新闻详情
-        const response = await axios.get(`http://localhost:5000/news/news/${newsItem.id}`);
-        selectedNews.value = response.data.news;
-        relatedNews.value = response.data.related_news;
+        // 获取相关新闻
+        const detailResponse = await axios.get(`http://localhost:5000/news/news/${targetNews.id}`);
+        if (detailResponse.data.related_news) {
+          relatedNews.value = detailResponse.data.related_news;
+        }
+
       } catch (error) {
         console.error('获取新闻详情失败:', error);
-        ElMessage.error('获取新闻详情失败');
+        ElMessage.error(error.message || '获取新闻详情失败');
       } finally {
-      loading.value = false;
-    }
+        loading.value = false;
+      }
     };
-    // 关闭弹窗时更新阅读历史
+
+    // 关闭弹窗时更新阅读历史和 URL
     const closeDialog = async () => {
       dialogVisible.value = false;
       if (readingInterval) {
         clearInterval(readingInterval); // 清除定时器
       }
 
-  // 记录阅读历史
-      console.log(selectedNews.value.id);
-      await axios.post(`http://localhost:5000/readhistory/read_history/${selectedNews.value.id}`, {
-      read_time: readingTime.value, // 记录阅读时长
-      is_finished: true, // 假设用户已读完
-      username: username
-    });
-  };
+      // 记录阅读历史
+      if (selectedNews.value) {
+        await axios.post(`http://localhost:5000/readhistory/read_history/${selectedNews.value.id}`, {
+          read_time: readingTime.value,
+          is_finished: true,
+          username: username
+        });
+      }
+
+      // 移除 URL 中的 newsId 参数，但保持在 newspage 路径
+      const query = { ...route.query };
+      delete query.newsId;
+      delete query.autoOpen;
+      router.replace({ path: '/newspage', query });
+    };
+
+    // 监听路由参数变化
+    watch(
+      () => [props.newsId, route.query.newsId],
+      async ([newPropId, newQueryId]) => {
+        const newsId = newPropId || newQueryId;
+        if (newsId) {
+          await showNewsDetail(null);
+        }
+      }
+    );
+
     //收藏
     const toggleFavorite = async () => {
       try {
@@ -344,8 +423,8 @@ export default {
       }
     };
 
-    onMounted(() => {
-      fetchNews();
+    onMounted(async () => {
+      await fetchNews();
     });
 
     return {

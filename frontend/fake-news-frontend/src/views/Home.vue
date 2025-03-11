@@ -30,14 +30,14 @@
                   <!-- 显示阅读量 -->
                   <div class="reading-container">
                     <div v-for="item in readingStats" :key="item.Day">
-                      <el-tag 
+                      <el-tag
                         class="reading-tag"
                         :class="getReadingTagClass(parseInt(item.content))"
-                        effect="light" 
+                        effect="light"
                         v-if="(item.Day).indexOf(data.day.split('-').slice(2).join('-'))!=-1"
                         @click="navigateToReadHistory(data.day, item.content)">
-                        <el-tooltip 
-                          content="当日阅读数量 (点击查看详情)" 
+                        <el-tooltip
+                          content="当日阅读数量 (点击查看详情)"
                           placement="top"
                           :show-after="300">
                           <span>{{ item.content }}</span>
@@ -206,18 +206,40 @@ export default {
 
     // 跳转到阅读历史记录页面
     const navigateToReadHistory = (date, count) => {
-      // 将日期格式化为 YYYY-MM-DD
-      const formattedDate = date;
+      // 确保日期格式正确
+      let targetDate;
       
-      // 使用 router 跳转到阅读历史记录页面，并传递日期参数
-      router.push({
-        path: '/read_history',
-        query: {
-          startDate: formattedDate,
-          endDate: formattedDate,
-          count: count
+      // 如果 date 是字符串，尝试解析它
+      if (typeof date === 'string') {
+        // 检查是否是完整的日期格式 (YYYY-MM-DD)
+        if (date.split('-').length === 3) {
+          targetDate = new Date(date);
+        } 
+        // 如果只有日部分 (DD)，需要构建完整日期
+        else {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth();
+          targetDate = new Date(year, month, parseInt(date));
         }
-      });
+      } else {
+        targetDate = new Date(date);
+      }
+      
+      // 格式化为 YYYY-MM-DD
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      console.log('跳转到阅读历史，日期:', formattedDate, '数量:', count);
+      
+      // 使用 localStorage 存储日期参数，确保页面刷新后仍然可用
+      localStorage.setItem('targetReadDate', formattedDate);
+      localStorage.setItem('targetReadCount', count);
+      
+      // 跳转到阅读历史页面
+      router.push('/read_history');
     };
 
     // 组件挂载时获取数据
