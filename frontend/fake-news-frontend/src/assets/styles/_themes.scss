@@ -1,5 +1,5 @@
 :root {
-  // Light theme
+
   &[data-theme="light"] {
     --bg-color: #f3f3f3;
     --font-color: #000000;
@@ -14,7 +14,7 @@
     --hover-nav: rgb(159.5,206.5,255);
   }
 
-  // Dark theme
+
   &[data-theme="dark"] {
     --bg-color: #000000;
     --font-color: #ffffff;

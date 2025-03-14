@@ -298,20 +298,22 @@ const logout = () => {
   background-color: var(--hover-nav);
 }
 
-:deep(.el-sub-menu__title:hover) {
-  background-color: var(--hover-nav) !important;
+:deep(.el-sub-menu__title) {
+  &:hover {
+    background-color: var(--hover-nav) !important;
+  }
 }
 
-.el-dropdown-menu{
+.el-dropdown-menu {
   background-color: var(--navbar-bg);
   color: var(--text-primary);
 }
 
-:deep(.el-dropdown-menu__item){
-  color:var(--text-primary);
-}
-
-:deep(.el-dropdown-menu__item:hover){
-  background-color: var(--hover-nav)!important;
+:deep(.el-dropdown-menu__item) {
+  color: var(--text-primary);
+  
+  &:hover {
+    background-color: var(--hover-nav) !important;
+  }
 }
 </style>

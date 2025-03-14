@@ -11,9 +11,29 @@
         <el-card class="dashboard-item" style="margin-top: 20px;">
           <div class="dashboard-item-content">
             <h2>今日推荐</h2>
-            <el-carousel :interval="4000" type="card" height="200px">
-              <el-carousel-item v-for="item in 6" :key="item">
-                <h3 text="2xl" justify="center">{{ item }}</h3>
+            <el-carousel
+              :interval="4000"
+              type="card"
+              height="200px"
+              :indicator-position="'outside'"
+              class="custom-carousel">
+              <el-carousel-item
+                v-for="item in recommendedNews"
+                :key="item.id"
+                @click="navigateToNews(item)">
+                <div class="carousel-item-content">
+                  <el-image
+                    :src="item.picUrl || defaultImage"
+                    fit="cover"
+                    class="carousel-image">
+                    <template #error>
+                      <div class="image-slot">
+                        <el-icon><Picture /></el-icon>
+                      </div>
+                    </template>
+                  </el-image>
+                  <div class="carousel-title">{{ item.title }}</div>
+                </div>
               </el-carousel-item>
             </el-carousel>
           </div>
@@ -75,23 +95,30 @@
             </div>
           </div>
         </el-card>
-        <el-card class="dashboard-item" style="margin-top: 20px;">
-          <div class="dashboard-item-content-notification">
-            <h2>最近通知</h2>
-            <div class="notification-content">
-              <el-empty :image-size="120" style="padding: 20px;">
-                <el-button type="primary">刷新</el-button>
-              </el-empty>
+        <el-card class="dashboard-item modern-fake-news" style="margin-top: 20px;">
+          <div class="modern-fake-news-header">
+            <h2>常见虚假信息</h2>
+          </div>
+          <div class="modern-fake-news-body">
+            <div class="fake-news-grid">
+              <el-card
+                v-for="(news, index) in commonFakeNews"
+                :key="index"
+                class="fake-news-card"
+                shadow="hover">
+                <div class="news-content">{{ news }}</div>
+              </el-card>
             </div>
           </div>
         </el-card>
+
         <el-card class="dashboard-item" style="margin-top: 20px;">
           <div class="dashboard-item-content">
             <h2>最近上传</h2>
             <el-table
               :data="recentUploads"
               style="width: 100%"
-              :header-cell-style="{ background: '#f5f7fa' }"
+              :header-cell-style="{ background: 'var(--navbar-bg)' }"
               border>
               <el-table-column prop="date" label="检测时间" width="145" />
               <el-table-column prop="content" label="新闻内容" show-overflow-tooltip>
@@ -117,7 +144,7 @@
               <el-table-column prop="confidence" label="置信度" width="120" align="center">
                 <template #default="scope">
                   <el-progress
-                    :percentage="(scope.row.confidence * 100)"
+                    :percentage="(scope.row.confidence )"
                     :color="getConfidenceColor(scope.row.confidence)"
                     :format="(percentage) => percentage.toFixed(2) + '%'"
                   />
@@ -135,8 +162,12 @@
 import { ref, onMounted } from 'vue';
 import axios from "axios";
 import router from "@/router";
+import { Picture } from '@element-plus/icons-vue';
 
 export default {
+  components: {
+    Picture
+  },
   setup() {
     const avatar = ref(localStorage.getItem('avatar') || 'avatar.png');
 
@@ -198,23 +229,23 @@ export default {
 
     // 根据阅读量返回不同的样式类
     const getReadingTagClass = (count) => {
-      if (count >= 100) return 'reading-very-high';
-      if (count >= 50) return 'reading-high';
-      if (count >= 20) return 'reading-medium';
-      return 'reading-low';
+      if (count >= 20) return 'reading-very-high';    // 非常高的阅读量
+      if (count >= 10) return 'reading-high';         // 高阅读量
+      if (count >= 5) return 'reading-medium';        // 中等阅读量
+      return 'reading-low';                           // 低阅读量
     };
 
     // 跳转到阅读历史记录页面
     const navigateToReadHistory = (date, count) => {
       // 确保日期格式正确
       let targetDate;
-      
+
       // 如果 date 是字符串，尝试解析它
       if (typeof date === 'string') {
         // 检查是否是完整的日期格式 (YYYY-MM-DD)
         if (date.split('-').length === 3) {
           targetDate = new Date(date);
-        } 
+        }
         // 如果只有日部分 (DD)，需要构建完整日期
         else {
           const now = new Date();
@@ -225,60 +256,92 @@ export default {
       } else {
         targetDate = new Date(date);
       }
-      
+
       // 格式化为 YYYY-MM-DD
       const year = targetDate.getFullYear();
       const month = String(targetDate.getMonth() + 1).padStart(2, '0');
       const day = String(targetDate.getDate()).padStart(2, '0');
       const formattedDate = `${year}-${month}-${day}`;
-      
+
       console.log('跳转到阅读历史，日期:', formattedDate, '数量:', count);
-      
+
       // 使用 localStorage 存储日期参数，确保页面刷新后仍然可用
       localStorage.setItem('targetReadDate', formattedDate);
       localStorage.setItem('targetReadCount', count);
-      
+
       // 跳转到阅读历史页面
       router.push('/read_history');
     };
 
+    //最近上传记录的响应式引用
+    const recentUploads=ref([]);
+    // 获取最近的检测记录
+    const fetchRecentUploads = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/history/detection-records', {
+          params: {
+            username: username,
+            limit: 5 // 只获取最近5条记录
+          }
+        });
+
+        if (response.data && response.data.history) {
+          // 格式化数据以匹配表格需求
+          recentUploads.value = response.data.history.map(record => ({
+            date: new Date(record.created_at).toLocaleString('zh-CN', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            content: record.content,
+            result: record.result,
+            confidence: record.score // 假设后端返回的分数字段为 score
+          })).slice(0, 5); // 确保只显示最近5条记录
+        }
+      } catch (error) {
+        console.error('获取最近检测记录失败:', error);
+      }
+    };
+
+    //今日推荐部分
+    const recommendedNews = ref([]);
+    const defaultImage = 'http://localhost:8080/default-news.jpg'; // 设置默认图片
+    // 获取推荐新闻
+    const fetchRecommendedNews = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/news/get_recommended_news');
+        if (response.data && response.data.recommended) {
+          recommendedNews.value = response.data.recommended;
+        }
+      } catch (error) {
+        console.error('获取推荐新闻失败:', error);
+      }
+    };
+    // 跳转到新闻详情
+    const navigateToNews = (news) => {
+      router.push({
+        path: '/newspage',
+        query: {
+          newsId: news.id,
+          autoOpen: 'true'
+        }
+      });
+    };
+
+    // 常见虚假信息
+    const commonFakeNews = ref([
+      "虚假新闻1：某知名品牌的产品被召回，实际上并未发生。",
+      "虚假新闻2：某名人去世的消息，实际上是谣言。",
+      "虚假新闻3：某事件的报道被夸大，实际情况并非如此。",
+    ]);
     // 组件挂载时获取数据
     onMounted(() => {
       fetchReadingStats();
+      fetchRecentUploads();
+      fetchRecommendedNews();
     });
-
-    const recentUploads = [
-      {
-        date: '2024-03-21 15:30',
-        content: '人工智能技术在医疗领域取得重大突破，AI诊断准确率达到95%',
-        result: true,
-        confidence: 0.95
-      },
-      {
-        date: '2024-03-21 10:45',
-        content: '科学家发现可以在沙漠中种植水稻的革命性方法',
-        result: false,
-        confidence: 0.23
-      },
-      {
-        date: '2024-03-20 16:20',
-        content: '新能源汽车续航能力突破2000公里大关',
-        result: false,
-        confidence: 0.46
-      },
-      {
-        date: '2024-03-20 09:15',
-        content: '全球气候变化导致北极圈温度升高，科学家呼吁关注',
-        result: true,
-        confidence: 0.85
-      },
-      {
-        date: '2024-03-20 09:15',
-        content: '全球气候变化导致北极圈温度升高，科学家呼吁关注',
-        result: true,
-        confidence: 0.85
-      }
-    ];
 
     return {
       avatar,
@@ -290,6 +353,10 @@ export default {
       readingStats,
       getReadingTagClass,
       navigateToReadHistory,
+      recommendedNews,
+      defaultImage,
+      navigateToNews,
+      commonFakeNews,
     };
   }
 };
@@ -364,16 +431,36 @@ export default {
   margin-top: 5px;
 }
 
-.notification-content {
-  min-height: 200px;
+/* 常见虚假信息卡片网格布局 */
+.fake-news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
 }
 
-.activity-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  margin-top: 20px;
+/* 单个虚假信息卡片样式 */
+.fake-news-card {
+  background: var(--card-bg, #ffffff);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: var(--font-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
 }
+
+.fake-news-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 深色模式适配 */
+[data-theme="dark"] .fake-news-card {
+  background: var(--bg-color, #1f1f1f);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
 
 
 .recent-uploads, .reading-calendar {
@@ -390,11 +477,49 @@ export default {
   font-size: 20px;
 }
 
+/*今日推荐部分*/
+.carousel-item-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.carousel-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.carousel-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 14px;
+  text-align: left;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--navbar-bg);
+  color: var(--font-color);
+}
 .el-carousel__item {
   border-radius: 8px;
   overflow: hidden;
 }
-
 .el-carousel__item h3 {
   background: var(--navbar-bg);
   font-size: 18px;
@@ -405,14 +530,24 @@ export default {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.el-carousel__item:nth-child(2n) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+[data-theme="dark"] .carousel-title {
+  background: rgba(0, 0, 0, 0.8);
 }
 
-.el-carousel__item:nth-child(2n + 1) {
-  background: linear-gradient(135deg, #7f7fd5 0%, #86a8e7 50%, #91eae4 100%);
+.el-carousel__item {
+  border-radius: 8px;
+  overflow: hidden;
 }
 
+:deep(.el-carousel__item--card) {
+  border-radius: 8px;
+}
+
+:deep(.el-carousel__mask) {
+  border-radius: 8px;
+}
+
+/*日历部分*/
 .calendar-cell {
   height: 100%;
   display: flex;
@@ -426,9 +561,6 @@ export default {
   background-color: var(--navbar-bg);
   margin: 5px;
 }
-
-:deep
-
 
 .upload-stats {
   padding: 15px;
@@ -495,24 +627,30 @@ export default {
 }
 
 .reading-low {
-  background-color: #e1f3ff;
+  background-color: var(--navbar-bg);
   color: #409EFF;
+  border: 1px solid #409EFF;
 }
 
 .reading-medium {
-  background-color: #e6f7ff;
-  color: #1890ff;
+  background-color: var(--navbar-bg);
+  color: #67C23A;
+  border: 1px solid #67C23A;
 }
 
 .reading-high {
-  background-color: #f0f9ff;
-  color: #0050b3;
+  background-color: var(--navbar-bg);
+  color: #E6A23C;
+  border: 1px solid #E6A23C;
 }
 
 .reading-very-high {
-  background: linear-gradient(45deg, #1890ff, #36cfc9);
-  color: white;
+  background-color: var(--navbar-bg);
+  color: #F56C6C;
+  border: 1px solid #F56C6C;
 }
+
+
 
 /* 日期样式 */
 .date {
@@ -534,4 +672,126 @@ export default {
   background-color: rgba(64, 158, 255, 0.1);
   border-radius: 8px;
 }
+
+
+/* 修改表格样式以支持深色模式 */
+:deep(.el-table) {
+  background-color: var(--navbar-bg);
+  color: var(--font-color);
+}
+
+:deep(.el-table th.el-table__cell) {
+  background-color: var(--navbar-bg);
+  color: var(--font-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+:deep(.el-table tr) {
+  background-color: var(--navbar-bg);
+}
+
+:deep(.el-table td.el-table__cell) {
+  background-color: var(--navbar-bg);
+  color: var(--font-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+:deep(.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell) {
+  background-color: var(--hover-nav);
+}
+
+/* 修改新闻内容文本样式 */
+.news-text {
+  color: var(--font-color);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* 修改tooltip样式 */
+:deep(.el-tooltip__trigger) {
+  color: var(--font-color);
+}
+
+/* 修改进度条背景色 */
+:deep(.el-progress-bar__outer) {
+  background-color: var(--border-color);
+}
+
+/* 修改表格头部样式 */
+:deep(.el-table__header) {
+  background-color: var(--navbar-bg);
+}
+
+:deep(.el-table__header-wrapper) {
+  background-color: var(--navbar-bg);
+}
+
+/* 修改空状态样式 */
+:deep(.el-empty__description) {
+  color: var(--font-color);
+}
+
+/* 修改按钮样式 */
+:deep(.el-button) {
+  background-color: var(--navbar-bg);
+  border-color: var(--border-color);
+  color: var(--font-color);
+}
+
+:deep(.el-button:hover) {
+  background-color: var(--hover-nav);
+  border-color: var(--border-color);
+}
+
+/* 修改标题样式 */
+h2 {
+  color: var(--font-color);
+}
+
+/* 今日推荐部分 */
+.custom-carousel {
+  padding-bottom: 30px; /* 为指示器留出空间 */
+}
+
+:deep(.el-carousel__indicators) {
+  bottom: 0px; /* 调整指示器位置 */
+}
+
+:deep(.el-carousel__indicator) {
+  padding: 12px 4px;
+}
+
+:deep(.el-carousel__button) {
+  background-color: var(--border-color);
+}
+
+:deep(.el-carousel__indicator.is-active .el-carousel__button) {
+  background-color: var(--font-color);
+}
+
+.fake-news-item {
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+.fake-news-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.reading-tag {
+  margin-top: 4px;
+  border-radius: 12px;
+  font-size: 14px;
+  padding: 4px 10px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.reading-tag:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 </style>
