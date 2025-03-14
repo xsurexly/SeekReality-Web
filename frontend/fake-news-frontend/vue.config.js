@@ -5,6 +5,7 @@ const { ElementPlusResolver } = require('unplugin-vue-components/resolvers');
 
 module.exports = defineConfig({
   transpileDependencies: true, // 转译 node_modules 中的依赖
+  productionSourceMap: true,
   configureWebpack: {
     plugins: [
       AutoImport({

@@ -34,14 +34,14 @@
 
     <!-- 新闻网格 -->
     <div class="news-grid">
-      <el-empty v-if="news.length === 0" description="暂无新闻" />
+      <el-empty v-if="paginatedNews.length === 0" description="暂无新闻" />
 
       <transition-group name="news-fade">
         <div
-          v-for="item in news"
+          v-for="item in paginatedNews"
           :key="item.id"
           class="news-grid-item"
-          @click="item?showNewsDetail(item) :null"
+          @click="item ? showNewsDetail(item) : null"
         >
           <div class="news-card">
             <el-image
@@ -70,11 +70,17 @@
                   真实度: {{ formatScore(item.fake_score) }}
                 </el-tag>
               </div>
-              <p class="news-description">{{ item.description }}</p>
             </div>
           </div>
         </div>
       </transition-group>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-controls">
+      <el-button @click="prevPage" :disabled="currentPage === 1">上一页</el-button>
+      <span>第 {{ currentPage }} 页 / {{ totalPages }} 页</span>
+      <el-button @click="nextPage" :disabled="currentPage === totalPages">下一页</el-button>
     </div>
 
     <!-- 新闻详情弹窗 -->
@@ -160,7 +166,7 @@
 <script>
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { Search, Picture } from '@element-plus/icons-vue';
 import debounce from 'lodash/debounce';
 import { useRoute, useRouter } from 'vue-router';
@@ -197,6 +203,8 @@ export default {
     const dialogVisible = ref(false);
     const readingTime = ref(0);
     let readingInterval = null;
+    const currentPage = ref(1);
+    const itemsPerPage = 5; // 每页显示的新闻数量
 
     //获取用户信息的函数
     const getUserInfo = () => {
@@ -280,7 +288,7 @@ export default {
         // 更新 URL，但不触发新的导航
         router.replace({
           path: '/newspage',
-          query: { 
+          query: {
             ...route.query,
             newsId: targetNews.id,
             autoOpen: 'true'
@@ -423,6 +431,52 @@ export default {
       }
     };
 
+    // 计算过滤后的新闻
+    const filteredNews = computed(() => {
+      let filtered = news.value;
+
+      // 根据搜索查询过滤
+      if (searchQuery.value) {
+        filtered = filtered.filter(item => item.title.includes(searchQuery.value));
+      }
+
+      // 根据选择的来源过滤
+      if (selectedSource.value) {
+        filtered = filtered.filter(item => item.source === selectedSource.value);
+      }
+
+      return filtered;
+    });
+
+    // 计算总页数
+    const totalPages = computed(() => {
+      return Math.ceil(filteredNews.value.length / itemsPerPage);
+    });
+
+    // 获取当前页的新闻
+    const paginatedNews = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage;
+      return filteredNews.value.slice(start, start + itemsPerPage);
+    });
+
+    // 翻页功能
+    const nextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        currentPage.value++;
+      }
+    };
+
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--;
+      }
+    };
+
+    // 监听搜索和来源变化，重置当前页
+    watch([searchQuery, selectedSource], () => {
+      currentPage.value = 1; // Reset to first page on filter change
+    });
+
     onMounted(async () => {
       await fetchNews();
     });
@@ -449,6 +503,11 @@ export default {
       formatDetectionDetails,
       closeDialog,
       toggleFavorite,
+      currentPage,
+      totalPages,
+      paginatedNews,
+      nextPage,
+      prevPage,
     };
   }
 };
@@ -510,15 +569,17 @@ export default {
 
 .news-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* 自适应列宽 */
+  grid-template-rows: auto; /* 启用瀑布流布局 */
+  gap: 16px; /* 统一间距 */
   margin-bottom: 24px;
 }
 
 .news-grid-item {
-  aspect-ratio: 1;
   cursor: pointer;
   transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .news-grid-item:hover {
@@ -526,7 +587,6 @@ export default {
 }
 
 .news-card {
-  height: 100%;
   background: var(--el-bg-color);
   border-radius: 8px;
   overflow: hidden;
@@ -537,19 +597,8 @@ export default {
 
 .news-image {
   width: 100%;
-  height: 50%;
+  max-height: 200px; /* 统一图片最大高度 */
   object-fit: cover;
-}
-
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
-  font-size: 32px;
 }
 
 .news-content {
@@ -560,7 +609,6 @@ export default {
 }
 
 .news-title {
-  margin: 0 0 12px;
   font-size: 16px;
   line-height: 1.4;
   color: var(--el-text-color-primary);
@@ -571,7 +619,6 @@ export default {
 }
 
 .news-meta {
-  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -582,16 +629,7 @@ export default {
   font-size: 12px;
 }
 
-.news-description {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--el-text-color-regular);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+
 
 /* 弹窗样式 */
 .news-dialog :deep(.el-dialog__header) {
@@ -771,5 +809,11 @@ export default {
   background: rgba(0, 0, 0, 0.1);
   padding: 8px;
   border-radius: 4px;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
 }
 </style>

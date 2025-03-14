@@ -87,6 +87,8 @@
         </div>
       </el-card>
     </div>
+    <!-- 地图 -->
+    <OverView />
   </div>
 </template>
 
@@ -99,6 +101,7 @@ import {
   PieChart,
   DataAnalysis
 } from '@element-plus/icons-vue'
+import OverView from './Overview/OverView.vue'
 
 export default {
   name: 'Visualization',
@@ -106,7 +109,8 @@ export default {
     Timer,
     Histogram,
     PieChart,
-    DataAnalysis
+    DataAnalysis,
+    OverView
   },
   setup() {
     // 响应式数据
@@ -331,7 +335,6 @@ export default {
   display: flex;
   align-items: center;
   font-size: 16px;
-
 }
 
 .card-header .el-icon {

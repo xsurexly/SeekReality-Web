@@ -10,6 +10,9 @@ from routes.history import detection_history_bp
 from routes.aihelper import aihelper_bp
 from routes.newsget import news_bp
 from routes.read_history import read_history_bp
+from routes.visualization import visualization_bp
+from backend.routes.overviewbp.cache_manager import CacheManager
+
 # 创建 Flask 应用
 app = Flask(__name__, static_folder='static')
 app.config.from_object(Config)
@@ -29,11 +32,15 @@ app.register_blueprint(detection_history_bp, url_prefix='/history')
 app.register_blueprint(aihelper_bp, url_prefix='/aihelper')
 app.register_blueprint(news_bp, url_prefix='/news')
 app.register_blueprint(read_history_bp, url_prefix='/readhistory')
+app.register_blueprint(visualization_bp, url_prefix='/visualization')
 
 # 添加静态文件服务路由
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
+
+# 初始化缓存管理器
+cache_manager = CacheManager()
 
 if __name__ == '__main__':
     app.run(debug=True)
