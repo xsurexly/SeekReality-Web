@@ -10,11 +10,7 @@ import os
 from pathlib import Path
 from routes.overviewdb.data_process.get_data_local import GetData
 from routes.overviewdb.data_process.dataprocess import (
-    CommunicationMap,
     Overview,
-    Middlelevel,
-    NewCommunicationMap,
-    NewTreeMap,
     flow_kew_words,
 )
 
@@ -340,75 +336,3 @@ def get_theme_river_data():
     except Exception as e:
         print(f"Error getting theme river data: {e}")
         return jsonify({'error': str(e)}), 500
-
-@visualization_bp.route('/middle', methods=['POST'])
-def get_middle_data():
-    """获取中间数据"""
-    try:
-        content_ids = request.json
-        if not content_ids:
-            return jsonify({'error': 'Content IDs are required'}), 400
-
-        # 尝试从缓存获取数据
-        cache_key = f'vis_middle_data_{"-".join(map(str, sorted(content_ids)))}'
-        cached_data = cache_manager.load_from_cache(cache_key)
-        
-        if cached_data:
-            return jsonify(cached_data)
-
-        # 初始化中间层数据
-        middle_level_data = Middlelevel().creat(ori_data, time, topic, emotion, influence)
-        result = []
-        
-        if middle_level_data:
-            for data in content_ids:
-                content_id_dict = {'content_id': data}
-                target_dict = middle_level_data.get(str(data))
-                if target_dict:
-                    content_id_dict.update(target_dict)
-                result.append(content_id_dict)
-
-            # 保存到缓存
-            cache_manager.save_to_cache(cache_key, result, 3600)
-            return jsonify(result)
-        else:
-            return jsonify({"error": "No data available"}), 404
-
-    except Exception as e:
-        print(f"Error getting middle data: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@visualization_bp.route('/treemap/<int:content_id>', methods=['GET'])
-def get_treemap_data(content_id):
-    """获取树图数据"""
-    try:
-        # 尝试从缓存获取数据
-        cache_key = f'vis_treemap_data_{content_id}'
-        cached_data = cache_manager.load_from_cache(cache_key)
-        
-        if cached_data:
-            return jsonify(cached_data)
-
-        # 初始化树图数据
-        tree_map = NewTreeMap().creat(
-            copy_ori_data,
-            copy_users_info,
-            copy_forward_info,
-            copy_forward_users_info,
-            copy_emotion,
-            copy_fcemotion,
-            {},  # dimension_reduction_data 暂时为空
-            copy_fc2020,
-        )
-
-        if tree_map and str(content_id) in tree_map:
-            result = tree_map[str(content_id)]
-            # 保存到缓存
-            cache_manager.save_to_cache(cache_key, result, 3600)
-            return jsonify(result)
-        else:
-            return jsonify({"error": "No data available"}), 404
-
-    except Exception as e:
-        print(f"Error getting treemap data: {e}")
-        return jsonify({'error': str(e)}), 500 
