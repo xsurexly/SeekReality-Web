@@ -2,9 +2,9 @@ from typing import Dict, List, Any
 from models import Newslist, Newsread, User, db
 from sqlalchemy import func, and_, extract, text
 from datetime import datetime, timedelta
-import pandas as pd
-import jieba
-from collections import Counter
+#import pandas as pd
+#import jieba
+#from collections import Counter
 
 class VisualizationManager:
     def __init__(self):

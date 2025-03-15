@@ -98,6 +98,7 @@ def get_detection_records():
         logger.error(f'获取检测记录失败: {str(e)}')
         return jsonify({'error': '获取检测记录失败'}), 500
 
+
 @detection_history_bp.route('/detection-records/<int:record_id>', methods=['DELETE'])
 def delete_detection_record(record_id):
     """删除指定的检测记录"""

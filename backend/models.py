@@ -28,6 +28,7 @@ class DetectionHistory(db.Model):
     file_path = db.Column(db.String(255), nullable=True)      # File path for uploaded files
     result = db.Column(db.String(50), nullable=False)         # Detection result
     detected_at = db.Column(db.DateTime, default=datetime.utcnow)  # Time of detection
+    detection_tool=db.Column(db.String(50),nullable=False) # "ai" or "model1"/model2/model3
 
 #用于ai助手的对话和检测历史记录
 class Record(db.Model):

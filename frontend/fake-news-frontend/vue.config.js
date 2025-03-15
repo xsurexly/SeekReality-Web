@@ -17,7 +17,7 @@ module.exports = defineConfig({
     ],
   },
   devServer: {
-    port: 8080, // 开发服务器端口
+    port: 5000, // 开发服务器端口
     open: true, // 启动后自动打开浏览器
     client: {
       overlay: {
@@ -27,8 +27,7 @@ module.exports = defineConfig({
     },
     proxy: {
       '/apis': {
-        target: 'http://api.jisuapi.com', // 代理目标地址
-        secure: false, // 允许代理到 HTTPS
+        target: 'http://172.17.57.41:5000', // 代理目标地址
         changeOrigin: true, // 修改请求头中的 Origin
         pathRewrite: { '^/apis': '' }, // 重写路径
       },

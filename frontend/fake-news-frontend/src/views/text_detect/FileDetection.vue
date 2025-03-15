@@ -17,7 +17,8 @@
           drag
           multiple
           :auto-upload="false"
-          :on-change="$emit('file-change', $event)"
+
+          :on-change="handleFileChange"
           :before-upload="beforeUpload"
           accept=".txt,.pdf,.docx,.png,.jpg"
           :show-file-list="false"
@@ -69,13 +70,13 @@
           type="success"
           :icon="MagicStick"
           class="detect-button"
-          @click="$emit('start-detection')"
+          @click="startFileDetection(fileList)"
           :disabled="!fileList.length"
           :loading="isDetecting"
-          style="background-color: #409EFF;"
-        >
+          style="background-color: #409EFF;">
           开始检测
         </el-button>
+
       </el-card>
     </div>
 
@@ -84,19 +85,18 @@
       <el-card shadow="hover" style="background: var(--navbar-bg);color: var(--font-color);">
         <h4>检测进度</h4>
 
-        <!-- 总进度 -->
-        <div class="total-progress">
-          <el-progress
-            :percentage="totalProgress"
-            :stroke-width="16"
-            :color="customColors"
-            striped
-          />
-          <div class="progress-info">
-            已完成 {{ completedCount }}/{{ fileList.length }}
-          </div>
-        </div>
 
+ <div class="total-progress">
+        <el-progress
+          :percentage="totalProgress"
+          :stroke-width="16"
+          :color="customGradient"
+          striped
+        />
+        <div class="progress-info">
+          已完成 {{ completedCount }}/{{ fileList.length }}
+        </div>
+      </div>
         <!-- 实时结果 -->
         <div class="realtime-results">
           <div
@@ -117,17 +117,29 @@
             />
             <div class="result-details">
               <span>置信度：{{ result.fraudProbability }}%</span>
-              <el-button v-if="result.keyPoints" type="primary" link>
+
+               <el-button
+              v-if="result.keyPoints"
+              type="primary"
+              link
+              @click="showFileDetails(result)"
+            >
                 查看详情
               </el-button>
             </div>
+            <div v-if="showDetails" class="file-content">
+            <el-card shadow="hover" style="margin-top: 20px;">
+
+              <pre>{{ selectedFileContent }}</pre>
+            </el-card>
+
+</div>
           </div>
         </div>
       </el-card>
     </div>
   </div>
 </template>
-
 <script setup>
 import {
   Document,
@@ -137,20 +149,54 @@ import {
   InfoFilled
 } from '@element-plus/icons-vue'
 
+import { ref, computed } from 'vue'
+import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+const fileList = ref([])
+const detectionResults = ref([])
+const isDetecting = ref(false)
 
-defineProps({
-  fileList: Array,
-  detectionResults: Array,
-  totalProgress: Number,
-  completedCount: Number,
-  isDetecting: Boolean
+const completedCount = computed(() => detectionResults.value.filter(res => res.status === '成功').length)
+const totalProgress = computed(() => fileList.value.length ? Math.floor((completedCount.value / fileList.value.length) * 100) : 0)
+
+const handleFileChange = (file) => {
+  file.status = '等待中'
+  fileList.value.push(file)
+}
+
+const selectedFileContent = ref('') // 存储选中的文件内容
+const showDetails = ref(false) // 控制是否显示详情
+
+const showFileDetails = async () => {
+ for (const file of fileList.value) {
+    const formData = new FormData()
+    formData.append('file', file.raw)
+    formData.append('user_id', localStorage.getItem('userid'))
+
+  try {
+    const response = await axios.post('http://localhost:5000/api/file-detect', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+    selectedFileContent.value = response.data.content
+    showDetails.value = true // 显示详情
+  } catch (error) {
+    ElMessage.error('加载文件内容失败: ' + error.message)
+  }
+}}
+
+// 动态渐变色
+const customGradient = computed(() => {
+  const percentage = totalProgress.value
+  if (percentage < 30) {
+    return 'linear-gradient(to right, #ebf5ee,#92d5c6)' // 浅绿到深绿
+  } else if (percentage < 70) {
+    return 'linear-gradient(to right, #ebf5ee,#92d5c6, #00c9a7)' // 深绿到蓝绿
+  } else {
+    return 'linear-gradient(to right,#ebf5ee,#92d5c6, #00c9a7,#0088a9   )' // 蓝绿到深绿
+  }
 })
 
-defineEmits(['file-change', 'remove-file', 'start-detection'])
-
-// 文件大小格式化
 const formatFileSize = (bytes) => {
   if (bytes === 0) return '0 B'
   const k = 1024
@@ -159,15 +205,6 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const beforeUpload = (file) => {
-  if (file.size > 10 * 1024 * 1024) {
-    ElMessage.error('文件大小不能超过10MB')
-    return false
-  }
-  return true
-}
-
-// 状态标签类型
 const getStatusType = (status) => {
   const statusMap = {
     '等待中': 'info',
@@ -178,13 +215,60 @@ const getStatusType = (status) => {
   return statusMap[status] || 'info'
 }
 
-// 进度条颜色
-const customColors = [
-  { color: '#e6a23c', percentage: 30 },
-  { color: '#1989fa', percentage: 70 },
-  { color: '#5cb87a', percentage: 100 }
-]
+const beforeUpload = (file) => {
+  if (file.size > 10 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过10MB')
+    return false
+  }
+  return true
+}
+
+const startFileDetection = async () => {
+  if (!fileList.value.length) return
+
+  isDetecting.value = true
+  detectionResults.value = []
+
+  for (const file of fileList.value) {
+    const formData = new FormData()
+    formData.append('file', file.raw)
+    formData.append('user_id', localStorage.getItem('userid'))
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/file-detect', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      if (response.data.success) {
+        detectionResults.value.push({
+          fileName: file.name,
+          isFake: response.data.isFake,
+          fraudProbability: response.data.fraudProbability,
+          keyPoints: response.data.keyPoints,
+          progress: 100,
+          status: '成功'
+        })
+        file.status = '成功'
+        ElMessage.success(`${file.name} 检测完成`)
+      } else {
+        file.status = '失败'
+        detectionResults.value.push({ fileName: file.name, status: '失败' })
+        ElMessage.error(`${file.name} 检测失败: ${response.data.message}`)
+      }
+    } catch (error) {
+      file.status = '失败'
+      detectionResults.value.push({ fileName: file.name, status: '失败' })
+      ElMessage.error(`${file.name} 上传失败: ${error.message}`)
+    }
+  }
+
+  isDetecting.value = false
+}
+
 </script>
+
+
+
 
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;
@@ -251,6 +335,15 @@ const customColors = [
       }
     }
   }
+}
+pre {
+  white-space: pre-wrap; /* 保留换行和空格 */
+  word-wrap: break-word; /* 长单词换行 */
+
+  padding: 10px; /* 内边距 */
+  border-radius: 4px; /* 圆角 */
+  max-height: 300px; /* 最大高度 */
+  overflow-y: auto; /* 超出内容滚动 */
 }
 
 .file-list {

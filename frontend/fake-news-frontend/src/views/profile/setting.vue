@@ -4,8 +4,8 @@
       <h3>其他设置</h3>
     </div>
     <div class="setting-top">
-        <h3 class="main-title">系统外观</h3>
-        <h5 class="sub-title">根据偏好选择系统的外观。</h5>
+      <h3 class="main-title">系统外观</h3>
+      <h5 class="sub-title">根据偏好选择系统的外观。</h5>
     </div>
     <div class="theme-buttons">
       <el-button
@@ -27,6 +27,19 @@
         <p>Dark Mode</p>
       </el-button>
     </div>
+
+    <!-- 模型选择部分 -->
+    <div class="model-selection">
+      <h3 class="main-title">模型选择</h3>
+      <h5 class="sub-title">选择偏好的模型。</h5>
+      <div class="radio-group">
+        <el-radio-group v-model="selectedModel" class="model-radio-group">
+          <el-radio label="model1">Model 1(Based on Bert)</el-radio>
+          <el-radio label="model2">Model 2</el-radio>
+          <el-radio label="model3">Model 3</el-radio>
+        </el-radio-group>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -34,6 +47,7 @@
 import { ref, onMounted } from 'vue'
 
 const darkTheme = ref(localStorage.getItem('theme') === 'dark')
+const selectedModel = ref('model1') // 默认选择 model1
 
 const switchTheme = (val) => {
   const theme = val ? 'dark' : 'light'
@@ -50,22 +64,8 @@ onMounted(() => {
 <style scoped lang="scss">
 // 引入主题配置文件
 @use "@/assets/styles/_themes.scss" as *;
-#app {
-  height: 100vh;
-  text-align: center;
-  background-color: var(--bg-color);
-  color: var(--font-color);
 
-  .fun{
-    width: 100%;
-    display: flex;
-    justify-content: flex-end;
-    padding: 5px;
-    box-sizing: border-box;
-  }
-}
-
-.system-settings{
+.system-settings {
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -84,7 +84,7 @@ onMounted(() => {
     font-size: 18px;
     margin-bottom: 10px;
     text-align: left;
-    color:var(--font-color);
+    color: var(--font-color);
   }
 
   h5 {
@@ -93,7 +93,7 @@ onMounted(() => {
     font-weight: 400;
     text-align: left;
     margin-bottom: 10px;
-    color:var(--font-color);
+    color: var(--font-color);
   }
 }
 
@@ -109,7 +109,7 @@ onMounted(() => {
     font-size: 18px;
     margin-bottom: 10px;
     text-align: left;
-    color:var(--font-color);
+    color: var(--font-color);
   }
 
   h5 {
@@ -117,13 +117,8 @@ onMounted(() => {
     font-size: 14px;
     font-weight: 400;
     text-align: left;
-    color:var(--font-color);
+    color: var(--font-color);
   }
-}
-
-
-:deep(.system-settings){
-  color: var(--text-primary)!important;
 }
 
 .theme-buttons {
@@ -137,7 +132,6 @@ onMounted(() => {
   height: 150%;
   padding: 20px;
   border: 1px solid #ebeef5;
-
   border-radius: 8px;
   cursor: pointer;
   text-align: center;
@@ -166,22 +160,60 @@ onMounted(() => {
     }
   }
 
-  .el-icon{
+  .el-icon {
     margin-bottom: 0;
     margin-right: 10px;
   }
 }
 
-:deep(.el-button){
-  color:var(--font-color)!important;
-  background-color: var(--navbar-bg);
-}
-.theme-button.active{
-  color:var(--font-color)!important;
-  background-color: var(--navbar-bg);
-}
-.el-button:hover{
-  background-color: #489dff9b;
+.model-selection {
+  margin-top: 20px;
+
+  .main-title {
+    margin: 0;
+    font-size: 18px;
+    margin-bottom: 10px;
+    text-align: left;
+    color: var(--font-color);
+  }
+
+  .sub-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 400;
+    text-align: left;
+    color: var(--font-color);
+  }
+
+  .radio-group {
+    display: flex;
+    justify-content: flex-start; /* 靠左对齐 */
+    width: 100%;
+  }
+
+  .model-radio-group {
+    display: flex;
+    flex-direction: row; /* 横向排列 */
+    gap: 20px; /* 单选按钮之间的间距 */
+  }
+
+  :deep(.el-radio) {
+    margin-right: 0; /* 移除默认的右边距 */
+    text-align: left; /* 文本靠左对齐 */
+  }
 }
 
+:deep(.el-button) {
+  color: var(--font-color) !important;
+  background-color: var(--navbar-bg);
+}
+
+.theme-button.active {
+  color: var(--font-color) !important;
+  background-color: var(--navbar-bg);
+}
+
+.el-button:hover {
+  background-color: #489dff9b;
+}
 </style>

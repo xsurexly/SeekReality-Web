@@ -114,28 +114,6 @@ def get_news():
             'sources': [],
         }), 500
 
-
-@news_bp.route('/get_recommended_news', methods=['GET'])
-def get_recommended_news():
-    try:
-        # 只获取有图片的新闻
-        recommended_news = Newslist.query.filter(
-            Newslist.picUrl.isnot(None),  # 图片URL不为空
-            Newslist.picUrl != ''         # 图片URL不为空字符串
-        ).order_by(func.random()).limit(10).all()  # 获取10条以确保有足够的有效新闻
-        
-        # 确保只返回6条有效新闻
-        valid_news = recommended_news[:6]
-        
-        response_data = {
-            'recommended': [news.to_dict() for news in valid_news]
-        }
-        
-        return jsonify(response_data)
-    except Exception as e:
-        logger.error(f"获取推荐新闻失败: {str(e)}")
-        return jsonify({'error': '获取推荐新闻失败'}), 500
-
 @news_bp.route('/news/<string:news_id>', methods=['GET'])
 def get_news_detail(news_id):
     """获取新闻详情"""

@@ -5,7 +5,7 @@
       v-model="inputText"
       type="textarea"
       :rows="6"
-      placeholder="请输入需要检测的文本内容"
+      placeholder="2请输入需要检测的文本内容"
       resize="none"
     />
 
@@ -81,6 +81,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import axios from 'axios' // 引入 axios 用于调用后端 API
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
@@ -104,33 +105,32 @@ const progressColor = computed(() => {
   ].find(item => detectionProgress.value <= item.percentage)?.color
 })
 
-// 模拟检测进度更新
-let progressInterval = null
+
+// 调用后端 API 进行文本检测
 const startTextDetection = async () => {
   try {
     isDetecting.value = true
     detectionResult.value = null
-
-    // 模拟进度更新
-    progressInterval = setInterval(() => {
-      detectionProgress.value = Math.min(detectionProgress.value + 10, 95)
-    }, 500)
-
-    // 实际应该调用API
-    const mockResult = await new Promise(resolve => {
-      setTimeout(() => {
-        resolve({
-          isFake: Math.random() > 0.5,
-          fraudProbability: Math.floor(Math.random() * 30 + 30),
-          keyPoints: ['不实信息', '夸张表述', '未经验证'],
-          analysis: '检测到文本中存在多个未经证实的断言，建议结合权威信息源进行交叉验证。'
-        })
-      }, 3000)
+    const userInfo = JSON.parse(localStorage.getItem('user'))
+    if (!userInfo || !userInfo.username) {
+      ElMessage.error('请先登录')
+      return
+    }
+    // 调用后端 API
+    const response = await axios.post('http://localhost:5000/api/text-detect', {
+      text: inputText.value,
+      user_id: localStorage.getItem('userid') // 从用户登录信息中获取
     })
 
-    // 完成进度
-    detectionProgress.value = 100
-    detectionResult.value = mockResult
+
+    // 更新检测结果
+    detectionResult.value = {
+      isFake: response.data.detectionResult.isFake,
+      fraudProbability: response.data.detectionResult.fraudProbability,
+      keyPoints: response.data.detectionResult.keyPoints,
+      analysis: '检测到文本中存在多个未经证实的断言，建议结合权威信息源进行交叉验证。'
+    }
+
     ElMessage.success('检测完成')
   } catch (error) {
     ElMessage.error('检测失败: ' + error.message)
@@ -139,12 +139,13 @@ const startTextDetection = async () => {
       fraudProbability: 0,
       analysis: '检测过程中发生错误'
     }
+
   } finally {
-    clearInterval(progressInterval)
     isDetecting.value = false
   }
 }
 </script>
+
 
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;

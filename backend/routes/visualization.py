@@ -35,7 +35,7 @@ try:
         commentusers,
         fc2020,
         fcemotion,
-    ) = GetData("D:/学习/大三下/软创创创/test4.0/Defeat-All-Fake/backend/routes/overviewdb/database").creat()
+    ) = GetData("E:/softwareInno/Defeat-All-Fake/backend/routes/overviewdb/database").creat()
 
     # 创建数据副本
     print("Creating data copies...")

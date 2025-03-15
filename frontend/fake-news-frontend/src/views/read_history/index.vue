@@ -102,10 +102,10 @@
         <el-table-column label="状态" width="100" align="center">
           <template #default="scope">
             <el-tag
-              :type="scope.row.is_finished ? 'success' : 'info'"
+              :type="scope.row.isFinished ? 'success' : 'info'"
               effect="light"
             >
-              {{ scope.row.is_finished ? '已读完' : '未读完' }}
+              {{ scope.row.isFinished ? '未读完' : '已读完' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -165,15 +165,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
 import { Search, Refresh } from '@element-plus/icons-vue'
-import {  useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 
 export default {
   name: 'ReadHistory',
-  components: {
-    Search
-  },
   setup() {
-    const router = useRouter();
+    const route = useRoute();
 
     // 基础数据
     const searchKeyword = ref('')
@@ -214,51 +211,31 @@ export default {
         console.log('开始获取阅读历史记录...');
         const response = await axios.get(`http://localhost:5000/readhistory/user/${username}`);
         console.log('API 响应:', response);
-
+        
         if (response.data && Array.isArray(response.data)) {
-          // 处理记录，确保日期格式一致
-          records.value = response.data.map(record => {
-            // 确保日期字段存在
-            if (!record.date) {
-              const now = new Date();
-              record.date = now.toUTCString();
-            }
-
-            // 统一使用 UTC 时间，保持与数据库时区一致
-            const dbDate = new Date(record.date);
-            const dateStr = dbDate.toUTCString();
-            
-            console.log('日期转换:', {
-              原始日期: record.date,
-              UTC日期: dateStr,
-              数据库时间戳: dbDate.getTime()
-            });
-
-            return {
-              ...record,
-              date: dateStr
-            };
-          });
-
-          total.value = Number(records.value.length);
-          console.log('处理后的记录:', records.value);
+          records.value = response.data;
+          // 直接设置总记录数为数字
+          total.value = Number(response.data.length);
+          console.log('获取的阅读历史记录:', response.data, '总记录数:', total.value);
         } else {
           console.error('API 返回的数据不是数组:', response.data);
           records.value = [];
           total.value = 0;
         }
-
+        
         // 更新统计数据
         await Promise.all([
           fetchFavoriteCount(),
           fetchReadingStats()
         ]);
-
+        
         // 标记数据已加载
         isDataLoaded.value = true;
+        console.log('数据加载完成，isDataLoaded:', isDataLoaded.value, 'total:', total.value);
       } catch (error) {
         console.error('获取阅读历史失败:', error);
         ElMessage.error('获取阅读历史失败');
+        // 即使出错，也标记为已加载，以便显示错误状态
         isDataLoaded.value = true;
         records.value = [];
         total.value = 0;
@@ -275,7 +252,6 @@ export default {
         ElMessage.error('获取阅读统计失败');
       }
     };
-    //获取收藏量方法
     const fetchFavoriteCount = async () => {
       try {
         const response = await axios.get('http://localhost:5000/news/get_favorite_count',
@@ -293,79 +269,46 @@ export default {
       if (!records.value || records.value.length === 0) {
         return [];
       }
-
+      
       // 先根据筛选条件过滤记录
       const filtered = records.value.filter(record => {
         if (!record) return false;
-
+        
         // 关键字筛选
         const matchKeyword = !searchKeyword.value ||
           (record.title && record.title.includes(searchKeyword.value)) ||
           (record.content && record.content.includes(searchKeyword.value));
-
+        
         // 分类筛选
         const matchCategory = !categoryFilter.value ||
           (record.category && record.category === categoryFilter.value);
-
+        
         // 日期筛选
         let matchDate = true;
         if (dateRange.value && Array.isArray(dateRange.value) && dateRange.value.length === 2) {
           try {
-            // 将记录日期转换为 UTC 时间
             const recordDate = new Date(record.date);
-            const recordYear = recordDate.getUTCFullYear();
-            const recordMonth = recordDate.getUTCMonth() + 1;
-            const recordDay = recordDate.getUTCDate();
-
-            // 将筛选范围转换为 UTC 时间
-            const startDate = dateRange.value[0];
-            const startYear = startDate.getFullYear();
-            const startMonth = startDate.getMonth() + 1;
-            const startDay = startDate.getDate();
-
-            const endDate = dateRange.value[1];
-            const endYear = endDate.getFullYear();
-            const endMonth = endDate.getMonth() + 1;
-            const endDay = endDate.getDate();
-
-            // 转换为数字进行比较（YYYYMMDD）
-            const recordNum = recordYear * 10000 + recordMonth * 100 + recordDay;
-            const startNum = startYear * 10000 + startMonth * 100 + startDay;
-            const endNum = endYear * 10000 + endMonth * 100 + endDay;
-
-            matchDate = recordNum >= startNum && recordNum <= endNum;
-
-            console.log('日期比较:', {
-              原始日期: record.date,
-              UTC年月日: `${recordYear}-${String(recordMonth).padStart(2, '0')}-${String(recordDay).padStart(2, '0')}`,
-              记录数值: recordNum,
-              开始日期: `${startYear}-${String(startMonth).padStart(2, '0')}-${String(startDay).padStart(2, '0')}`,
-              开始数值: startNum,
-              结束日期: `${endYear}-${String(endMonth).padStart(2, '0')}-${String(endDay).padStart(2, '0')}`,
-              结束数值: endNum,
-              是否匹配: matchDate
-            });
+            const startDate = new Date(dateRange.value[0]);
+            const endDate = new Date(dateRange.value[1]);
+            
+            // 设置时间为一天的开始和结束，以确保包含整天
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            
+            matchDate = recordDate >= startDate && recordDate <= endDate;
           } catch (error) {
             console.error('日期比较出错:', error);
             matchDate = true; // 出错时默认显示
           }
         }
-
+        
         return matchKeyword && matchCategory && matchDate;
       });
-
+      
       // 分页处理
       const start = (currentPage.value - 1) * pageSize.value;
       const end = start + pageSize.value;
-      
-      // 格式化显示日期，使用 UTC 时间
-      return filtered.slice(start, end).map(record => {
-        const date = new Date(record.date);
-        return {
-          ...record,
-          date: `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')} ${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}:${String(date.getUTCSeconds()).padStart(2, '0')}`
-        };
-      });
+      return filtered.slice(start, end);
     });
 
     // 计算过滤后的总记录数
@@ -374,55 +317,41 @@ export default {
       if (!records.value || records.value.length === 0) {
         return 0;
       }
-
+      
       const count = records.value.filter(record => {
         if (!record) return false;
-
+        
         // 关键字筛选
         const matchKeyword = !searchKeyword.value ||
           (record.title && record.title.includes(searchKeyword.value)) ||
           (record.content && record.content.includes(searchKeyword.value));
-
+        
         // 分类筛选
         const matchCategory = !categoryFilter.value ||
           (record.category && record.category === categoryFilter.value);
-
+        
         // 日期筛选
         let matchDate = true;
         if (dateRange.value && Array.isArray(dateRange.value) && dateRange.value.length === 2) {
           try {
-            // 将记录日期转换为 UTC 时间
             const recordDate = new Date(record.date);
-            const recordYear = recordDate.getUTCFullYear();
-            const recordMonth = recordDate.getUTCMonth() + 1;
-            const recordDay = recordDate.getUTCDate();
-
-            // 将筛选范围转换为 UTC 时间
-            const startDate = dateRange.value[0];
-            const startYear = startDate.getFullYear();
-            const startMonth = startDate.getMonth() + 1;
-            const startDay = startDate.getDate();
-
-            const endDate = dateRange.value[1];
-            const endYear = endDate.getFullYear();
-            const endMonth = endDate.getMonth() + 1;
-            const endDay = endDate.getDate();
-
-            // 转换为数字进行比较（YYYYMMDD）
-            const recordNum = recordYear * 10000 + recordMonth * 100 + recordDay;
-            const startNum = startYear * 10000 + startMonth * 100 + startDay;
-            const endNum = endYear * 10000 + endMonth * 100 + endDay;
-
-            matchDate = recordNum >= startNum && recordNum <= endNum;
+            const startDate = new Date(dateRange.value[0]);
+            const endDate = new Date(dateRange.value[1]);
+            
+            // 设置时间为一天的开始和结束，以确保包含整天
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            
+            matchDate = recordDate >= startDate && recordDate <= endDate;
           } catch (error) {
             console.error('日期比较出错:', error);
             matchDate = true; // 出错时默认显示
           }
         }
-
+        
         return matchKeyword && matchCategory && matchDate;
       }).length;
-
+      
       console.log('过滤后的记录数量:', count);
       return Number(count);
     });
@@ -471,14 +400,7 @@ export default {
     }
     //继续阅读，还没有实现
     const continueReading = (record) => {
-      // 跳转到新闻页面并显示指定新闻
-      router.push({
-        path: '/newspage',
-        query: {
-          newsId: record.news_id,
-          autoOpen: 'true'
-        }
-      });
+      ElMessage.info(`继续阅读：${record.title}`)
     }
     // 收藏和取消收藏
     const toggleFavorite = async (record) => {
@@ -531,51 +453,32 @@ export default {
     onMounted(async () => {
       try {
         console.log('组件开始挂载...');
-
-        // 从 localStorage 获取日期参数
-        const targetDate = localStorage.getItem('targetReadDate');
-        const count = localStorage.getItem('targetReadCount');
-
-        if (targetDate) {
-          console.log('检测到日期参数:', targetDate);
-
-          // 解析目标日期字符串（格式：YYYY-MM-DD）
-          const [year, month, day] = targetDate.split('-').map(Number);
+        // 检查是否有日期参数
+        const startDate = route.query.startDate;
+        const endDate = route.query.endDate;
+        
+        if (startDate && endDate) {
+          // 设置日期范围
+          dateRange.value = [new Date(startDate), new Date(endDate)];
+          console.log('设置的日期范围:', dateRange.value);
           
-          // 使用本地时间创建日期对象
-          const startOfDay = new Date(year, month - 1, day);
-          startOfDay.setHours(0, 0, 0, 0);
-
-          const endOfDay = new Date(year, month - 1, day);
-          endOfDay.setHours(23, 59, 59, 999);
-
-          dateRange.value = [startOfDay, endOfDay];
-          
-          const formattedStartDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          console.log('设置的日期范围:', {
-            开始日期: formattedStartDate,
-            结束日期: formattedStartDate,
-            开始时间对象: startOfDay,
-            结束时间对象: endOfDay
-          });
-
           // 如果有阅读数量参数，显示提示信息
+          const count = route.query.count;
           if (count) {
-            ElMessage.info(`显示 ${formattedStartDate} 的 ${count} 条阅读记录`);
+            ElMessage.info(`显示 ${startDate} 的 ${count} 条阅读记录`);
           }
-
-          // 清除 localStorage 中的参数，避免影响下次访问
-          localStorage.removeItem('targetReadDate');
-          localStorage.removeItem('targetReadCount');
         }
-
+        
         // 获取阅读历史记录
         await fetchReadHistory();
-
-        console.log('组件挂载完成，总记录数:', total.value);
+        
+        console.log('组件挂载完成，总记录数:', total.value, '数据加载状态:', isDataLoaded.value);
+        console.log('分页组件条件:', 'isDataLoaded:', isDataLoaded.value, 'total > 0:', Number(total.value) > 0);
+        console.log('currentPage:', currentPage.value, 'pageSize:', pageSize.value);
       } catch (error) {
         console.error('组件挂载时出错:', error);
         ElMessage.error('加载数据失败，请刷新页面重试');
+        // 即使出错，也标记为已加载，以便显示错误状态
         isDataLoaded.value = true;
       }
     });
