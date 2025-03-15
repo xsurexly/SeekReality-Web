@@ -11,6 +11,9 @@
     --text-secondary: #909399;
     --icon-color: #000000;
     --hover-nav: rgb(159.5,206.5,255);
+    --aihelper-chat:#66ddd2;
+    --aihelper-modebg:#f8fafc;
+    --aihelper-modetxt:#64748b;
   }
 
   &[data-theme="dark"] {
@@ -25,5 +28,8 @@
     --text-secondary: #a0a0a0;
     --icon-color: #ffffff;
     --hover-nav: #000000;
+    --aihelper-chat:#336f69;
+    --aihelper-modebg:#4c4c4c;
+    --aihelper-modetxt:#ffffff;
   }
 }

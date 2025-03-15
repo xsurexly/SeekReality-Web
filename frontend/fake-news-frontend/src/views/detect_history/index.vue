@@ -86,7 +86,7 @@
         :data="filteredRecords"
         stripe
         style="width: 100%"
-        :header-cell-style="{ background: '#f5f7fa' }"
+        :header-cell-style="{ background: 'var(--bg-color)',color:'var(--font-color)' }"
         border
       >
         <el-table-column prop="created_at" label="检测时间" width="180">
@@ -183,40 +183,47 @@
       width="60%"
       class="detail-dialog"
     >
-      <div v-if="selectedRecord" class="detail-content">
-        <div class="detail-section">
-          <h3>检测内容</h3>
-          <p>{{ selectedRecord.content }}</p>
-        </div>
-        <div class="detail-section">
-          <h3>检测方式</h3>
-          <el-tag
-            :type="selectedRecord.detection_mode === 'analysis' ? 'primary' : 'success'"
-            effect="light"
-          >
-            {{ selectedRecord.detection_mode === 'analysis' ? 'AI助手' : '模型检测' }}
-          </el-tag>
-        </div>
-        <div class="detail-section">
-          <h3>分析结果</h3>
-          <div class="score-section">
-            真实性评分：{{ selectedRecord.score }}分
-          </div>
-          <div class="analysis-section">
-            <h4>详细分析</h4>
-            <div v-html="selectedRecord.detailed_analysis.replace(/\n/g, '<br>')"></div>
-          </div>
-          <div class="evidence-section">
-            <h4>相关事实依据</h4>
-            <div v-html="selectedRecord.evidence.replace(/\n/g, '<br>')"></div>
-          </div>
-          <div class="summary-section">
-            <h4>总结</h4>
-            <div v-html="selectedRecord.summary.replace(/\n/g, '<br>')"></div>
-          </div>
+  <div v-if="selectedRecord" class="report-container">
+    <!-- 报告头部 -->
+    <div class="report-header">
+      <h1>新闻真实性分析报告</h1>
+      <p>生成时间：{{ new Date().toLocaleString() }}</p>
+    </div>
+    <!-- 报告主体 -->
+    <div class="report-content">
+      <!-- 评分区 -->
+      <div class="score-section">
+        <div class="score-content">
+          <span class="score-label">真实性评分：</span>
+          <span class="score">{{ selectedRecord.score }}</span>
+          <span class="score-unit">分</span>
         </div>
       </div>
-    </el-dialog>
+      <!-- 详细分析 -->
+      <div class="analysis-block">
+        <div class="section-title">详细分析</div>
+        <div class="analysis-item" v-html="formatDetail(selectedRecord.detailed_analysis)"></div>
+      </div>
+      <!-- 相关事实依据 -->
+      <div class="evidence-block">
+        <div class="section-title">相关事实依据</div>
+        <div class="analysis-item" v-html="formatDetail(selectedRecord.evidence)"></div>
+      </div>
+      <!-- 总结 -->
+      <div class="summary-block">
+        <div class="section-title">总结</div>
+        <div class="summary-content" v-html="formatDetail(selectedRecord.summary)"></div>
+      </div>
+    </div>
+    <!-- 报告底部 -->
+    <div class="footer">
+      <p>由AI助手生成的新闻真实性分析报告</p>
+      <el-button type="primary" @click="exportReport">导出报告</el-button>
+      <el-button @click="detailDialogVisible = false">关闭</el-button>
+    </div>
+  </div>
+</el-dialog>
+
   </div>
 </template>
 
@@ -263,7 +270,7 @@ export default {
 
     // 过滤记录
     const filteredRecords = computed(() => {
-      return records.value.filter(record => {
+      const filtered = records.value.filter(record => {
         const matchKeyword = !searchKeyword.value ||
           record.content.toLowerCase().includes(searchKeyword.value.toLowerCase())
         const matchMode = !detectionMode.value || record.detection_mode === detectionMode.value
@@ -275,6 +282,11 @@ export default {
 
         return matchKeyword && matchMode && matchResult && matchDate
       })
+
+      // 进行分页处理
+      const start = (currentPage.value - 1) * pageSize.value
+      const end = start + pageSize.value
+      return filtered.slice(start, end)
     })
 
     // 获取历史记录
@@ -288,13 +300,13 @@ export default {
 
         const response = await axios.get(`http://localhost:5000/history/detection-records`, {
           params: {
-            username: userInfo.username
+            username: userInfo.username,
           }
         })
 
         if (response.data && response.data.history) {
           records.value = response.data.history
-          total.value = response.data.history.length
+          total.value = records.value.length // 更新总记录数
         }
       } catch (error) {
         console.error('获取历史记录失败:', error)
@@ -337,10 +349,135 @@ export default {
     const handleSizeChange = (val) => {
       pageSize.value = val
       currentPage.value = 1
+      fetchRecords(); // 重新获取数据
     }
 
     const handleCurrentChange = (val) => {
       currentPage.value = val
+      fetchRecords(); // 重新获取数据
+    }
+
+    // 格式化详细内容
+    const formatDetail = (content) => {
+      return content.replace(/\n/g, '<br>'); // 将换行符替换为 <br>
+    }
+
+    // 导出报告功能，生成 HTML 文件并触发下载
+    const exportReport = () => {
+      if (!selectedRecord.value) return
+      const reportHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>新闻真实性分析报告</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .report-header {
+              text-align: center;
+              margin-bottom: 30px;
+              padding: 20px;
+              background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+              color: white;
+              border-radius: 10px;
+            }
+            .score-section {
+              background: #EFF6FF;
+              padding: 20px;
+              border-radius: 10px;
+              margin-bottom: 20px;
+              border: 1px solid #93C5FD;
+            }
+            .score-content {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            .score-label {
+              font-size: 20px;
+              margin-right: 10px;
+            }
+            .score {
+              font-size: 32px;
+              font-weight: bold;
+              color: #2563EB;
+            }
+            .score-unit {
+              font-size: 20px;
+              margin-left: 10px;
+            }
+            .analysis-block, .evidence-block, .summary-block {
+              background: white;
+              padding: 20px;
+              border-radius: 10px;
+              margin-bottom: 20px;
+              border: 1px solid #E5E7EB;
+            }
+            .section-title {
+              color: #2563EB;
+              font-size: 20px;
+              margin-bottom: 15px;
+            }
+            .analysis-item, .summary-content {
+              padding: 10px;
+              background: #F8FAFC;
+              border-radius: 5px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #E5E7EB;
+              color: #6B7280;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="report-header">
+            <h1>新闻真实性分析报告</h1>
+            <p>生成时间：${new Date().toLocaleString()}</p>
+          </div>
+          <div class="score-section">
+            <div class="score-content">
+              <span class="score-label">真实性评分：</span>
+              <span class="score">${selectedRecord.value.score}</span>
+              <span class="score-unit">分</span>
+            </div>
+          </div>
+          <div class="analysis-block">
+            <div class="section-title">详细分析</div>
+            <div class="analysis-item">${formatDetail(selectedRecord.value.detailed_analysis)}</div>
+          </div>
+          <div class="evidence-block">
+            <div class="section-title">相关事实依据</div>
+            <div class="analysis-item">${formatDetail(selectedRecord.value.evidence)}</div>
+          </div>
+          <div class="summary-block">
+            <div class="section-title">总结</div>
+            <div class="summary-content">${formatDetail(selectedRecord.value.summary)}</div>
+          </div>
+          <div class="footer">
+            <p>由AI助手生成的新闻真实性分析报告</p>
+          </div>
+        </body>
+        </html>
+      `
+      const blob = new Blob([reportHTML], { type: 'text/html' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `新闻分析报告_${new Date().toISOString().slice(0,10)}.html`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
     }
 
     onMounted(() => {
@@ -370,7 +507,9 @@ export default {
       handleCurrentChange,
       refreshData,
       Refresh,
-      Search
+      Search,
+      formatDetail,
+      exportReport,
     }
   }
 }
@@ -512,35 +651,8 @@ export default {
 }
 
 
-:deep(.el-table) {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
 :deep(.el-table th) {
   font-weight: 600;
-}
-
-:deep(.el-button--link) {
-  padding: 4px 8px;
-}
-
-:deep(.el-progress-bar__outer) {
-  border-radius: 4px;
-}
-
-:deep(.el-input__wrapper),
-:deep(.el-select),
-:deep(.el-date-editor) {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-:deep(.el-button) {
-  font-weight: 500;
-}
-
-.detail-dialog :deep(.el-dialog__body) {
-  padding: 20px;
 }
 
 .detail-content {
@@ -559,10 +671,27 @@ export default {
 }
 
 .score-section {
-  font-size: 18px;
-  font-weight: bold;
-  color: #409EFF;
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center; /* 垂直居中对齐 */
+  margin-bottom: 10px; /* 增加底部间距 */
+}
+
+.scorelabel {
+  font-weight: bold; /* 加粗评分标签 */
+  font-size: 16px; /* 调整字体大小 */
+  margin-right: 8px; /* 增加右侧间距 */
+}
+
+.score {
+  font-size: 24px; /* 增加评分字体大小 */
+  font-weight: bold; /* 加粗评分 */
+  color: #2563EB; /* 设置评分颜色 */
+}
+
+.detail-prompt {
+  font-size: 12px; /* 减小提示词字体大小 */
+  color: #666; /* 设置提示词颜色 */
+  margin-top: 5px; /* 增加顶部间距 */
 }
 
 .analysis-section,
@@ -613,4 +742,75 @@ export default {
   background: var(--navbar-bg);
   border: 1px solid var(--border-color);
 }
+
+/*查看详情的报告样式*/
+.report-container {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  color: #000000;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.report-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: white;
+  border-radius: 10px;
+}
+.score-section {
+  background: #EFF6FF;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #93C5FD;
+}
+.score-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.score-label {
+  font-size: 20px;
+  margin-right: 10px;
+}
+.score {
+  font-size: 32px;
+  font-weight: bold;
+  color: #2563EB;
+}
+.score-unit {
+  font-size: 20px;
+  margin-left: 10px;
+}
+.analysis-block,
+.evidence-block,
+.summary-block {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #E5E7EB;
+}
+.section-title {
+  color: #2563EB;
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+.analysis-item,
+.summary-content {
+  padding: 10px;
+  background: #F8FAFC;
+  border-radius: 5px;
+}
+.footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+  color: #6B7280;
+}
+
 </style>

@@ -17,7 +17,7 @@
       <div class="ai-popup-header">
         <span style="margin-top:5px">AI智能助手</span>
         <button @click="closeAI">
-          <SvgIcon iconName="icon-guanbi" style="width:20px;height:20px"></SvgIcon>
+          <SvgIcon iconName="icon-guanbi" style="width:30px;height:30px"></SvgIcon>
         </button>
       </div>
       <!-- 聊天内容区域 -->
@@ -25,23 +25,16 @@
         <!-- 对话模式选择 -->
         <div class="conversation-mode">
           <label class="mode-label">
-            <input type="radio" v-model="conversationMode" value="chat" /> 普通对话
+            <input
+              type="radio" v-model="conversationMode" value="chat"
+            /> 普通对话
           </label>
           <label class="mode-label">
-            <input type="radio" v-model="conversationMode" value="analysis" /> 新闻分析
+            <input
+              type="radio" v-model="conversationMode" value="analysis"
+            /> 新闻分析
           </label>
         </div>
-
-        <!-- 模式说明 -->
-        <div class="mode-description">
-          <p v-if="conversationMode === 'chat'">
-            当前模式：普通对话 - 可以进行日常交谈和问答
-          </p>
-          <p v-else>
-            当前模式：新闻分析 - 输入新闻内容，AI将帮助分析其真实性
-          </p>
-        </div>
-
         <!-- 问答区域 -->
         <div class="chat-container">
           <div class="messages-container" ref="messagesContainer">
@@ -67,17 +60,15 @@
                   </div>
                   <div v-else>
                     <div v-if="conversationMode === 'analysis' && msg.assistant.includes('真实性评分')" class="analysis-report">
-                      <div class="report-header">
-                        <div class="report-title">
-                          <h2>新闻真实性分析报告</h2>
-                          <span class="report-subtitle">AI智能分析结果</span>
+                        <div class="score-section">
+                          <h4 class="score-label">真实性评分：</h4>
+                          <h2 class="score">{{ extractScore(msg.assistant) }}</h2>
                         </div>
-                        <div class="report-actions">
+                        <h5 class="detail-prompt"> (点击右侧获取分析报告)</h5> <!-- 提示用户点击分析报告 -->
+                        <div class="report-actions"> <!-- 获取报告-->
                           <div class="export-dropdown">
                             <button class="export-btn" @click="toggleExportMenu">
-                              <i class="fas fa-file-export"></i>
-                              导出报告
-                              <i class="fas fa-chevron-down ml-2"></i>
+                              <SvgIcon iconName="icon-wenjian" style="width:25px;height:25px"></SvgIcon>
                             </button>
                             <div class="export-menu" v-if="showExportMenu">
                               <button class="export-option" @click="exportReport(msg.assistant, 'html')">
@@ -91,8 +82,6 @@
                             </div>
                           </div>
                         </div>
-                      </div>
-                      <div class="report-content" v-html="formatResponse(msg.assistant)"></div>
                     </div>
                     <div v-else v-html="formatResponse(msg.assistant)"></div>
                   </div>
@@ -101,7 +90,6 @@
             </div>
           </div>
         </div>
-
         <!-- 输入区域 -->
         <div class="input-section">
           <textarea
@@ -122,20 +110,18 @@
                 accept=".docx,.pdf"
                 style="display: none"
               />
-              <button @click="triggerFileUpload" :disabled="loading" class="upload-button">
-                <i class="fas fa-file-upload"></i>
-                上传文件
-              </button>
+              <el-button @click="triggerFileUpload" :disabled="loading" class="upload-button">
+                <SvgIcon iconName="icon-tianjia" style="width:30px;height:30px"></SvgIcon>
+              </el-button>
               <span v-if="selectedFile" class="file-name">{{ selectedFile.name }}</span>
             </div>
-            <button
+            <el-button
               @click="sendMessage"
               :disabled="loading || !userMessage.trim()"
               class="send-button"
             >
-              <i class="fas fa-paper-plane"></i>
-              发送
-            </button>
+              <i class="el-icon-paperplane"></i>发送
+            </el-button>
           </div>
         </div>
       </div>
@@ -147,8 +133,10 @@
 
 <script>
 import { ref, watch, nextTick, computed, onMounted } from 'vue';
+import { ElButton } from 'element-plus'; // 引入 Element Plus 按钮组件
 
 export default {
+  components: { ElButton,},
   setup() {
     // AI助手状态相关
     const aiOpen = ref(false);
@@ -349,6 +337,12 @@ export default {
       } finally {
         loading.value = false;
       }
+    };
+
+    // 提取评分结果的函数
+    const extractScore = (response) => {
+      const match = response.match(/真实性评分：(\d+(\.\d+)?)/);
+      return match ? match[1] : '无评分';
     };
 
     // 修改文件上传函数
@@ -572,12 +566,13 @@ export default {
       sendMessage,
       handleNewLine,
       getPlaceholder,
+      extractScore,
 
       // 对话模式
       conversationMode,
       exportReport,
 
-      // Export menu
+      // 导出
       showExportMenu,
       toggleExportMenu,
     };
@@ -585,7 +580,8 @@ export default {
 };
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use "@/assets/styles/_themes.scss" as *;
 /* AI助手图标 */
 .ai-icon {
   position: fixed;
@@ -614,22 +610,23 @@ export default {
   width: 400px;  /* 默认宽度 */
   max-width: 90vw; /* 最大宽度 */
   min-width: 300px; /* 最小宽度 */
-  background-color: #ffffff;
-  border-left: 3px solid #10B981;
+  background-color: var(--bg-color);
+  border-left: 3px solid var(--aihelper-chat);
+  font-color:var(--font-color);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
   z-index: 999;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   transition: width 0.3s;
   resize: horizontal; /* 允许横向调整大小 */
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
 }
 
 .ai-popup-header {
   padding: 20px;
-  background-color: #10B981;
-  color: white;
+  background-color: var(--aihelper-chat);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -640,8 +637,7 @@ export default {
 }
 
 .ai-popup-header button {
-  background-color: #B0E4C8;
-  color: black;
+  background-color: var(--aihelper-chat);
   border: none;
   padding: 5px 10px;
   cursor: pointer;
@@ -661,14 +657,18 @@ export default {
   flex-direction: column;
   justify-content: space-between;
 }
+
 .conversation-mode {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
 }
+
 .chat-container {
+  border-radius: 8px;
   flex: 1;
   display: flex;
+  background-color:var(--aihelper-modebg);
   flex-direction: column;
   justify-content: flex-start;
 }
@@ -677,7 +677,6 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  background-color: #F9FAFB;
   border-radius: 8px;
   margin-bottom: 10px; /* 与输入区域保持间距 */
 }
@@ -727,7 +726,7 @@ export default {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--chat-gradient, linear-gradient(135deg, #10B981 0%, #059669 100%));
+  background: var(--aihelper-chat);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -742,7 +741,7 @@ export default {
 
 .message-content {
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   font-size: 14px;
   line-height: 1.6;
   position: relative;
@@ -751,18 +750,18 @@ export default {
 }
 
 .user-message .message-content {
-  background: var(--chat-gradient, linear-gradient(135deg, #10B981 0%, #059669 100%));
+  background: var(--aihelper-chat);
   color: white;
   border-top-right-radius: 4px;
   margin-right: 0; /* 移除右边距 */
 }
 
 .assistant-message .message-content {
-  background: white;
+  background: var(--bg-color);
+  font-color: var(--font-color);
   border: 1px solid var(--neutral-200, #E5E7EB);
   border-top-left-radius: 4px;
   margin-left: 0; /* 移除左边距 */
-  color: var(--neutral-800, #1F2937);
 }
 
 .user-message .message-content::after {
@@ -829,7 +828,8 @@ export default {
 
 /* 输入区域 */
 .input-section {
-  background-color: white;
+  margin-top:10px;
+  background-color: var(--aihelper-modebg);
   border-radius: 8px;
   padding: 16px;
   display: flex;
@@ -838,17 +838,10 @@ export default {
   position: relative; /* 使上传按钮相对定位 */
 }
 
-.upload-section {
-  display: flex;
-  align-items: center;
-}
-
 .upload-button {
+  border:None;
   padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  background-color: #3B82F6;
-  color: white;
+  background-color: var(--aihelper-modebg); /* Element Plus 默认颜色 */
   cursor: pointer;
   transition: transform 0.2s, filter 0.2s;
 }
@@ -858,7 +851,24 @@ export default {
   filter: brightness(1.1);
 }
 
+.send-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #10B981; /* Element Plus 默认颜色 */
+  color: white;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.send-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
 textarea {
+  background-color:var(--bg-color);
+  color: var(--font-color);
   flex: 1; /* 使文本框填满剩余空间 */
   padding: 12px;
   border: 2px solid #E5E7EB;
@@ -870,8 +880,8 @@ textarea {
 
 textarea:focus {
   outline: none;
-  border-color: #10B981;
-  background-color: #f9f9f9;
+  border-color: var(--aihelper-chat);
+  background-color: var(--bg-color);
 }
 
 .error-message {
@@ -943,26 +953,17 @@ textarea:focus {
 .mode-label {
   padding: 8px 16px;
   border-radius: 20px;
-  background-color: #f3f4f6;
+  background-color: var(--aihelper-modebg);
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .mode-label:hover {
-  background-color: #e5e7eb;
+  background-color: var(--card-bg);
 }
 
 .mode-label input[type="radio"] {
   margin-right: 8px;
-}
-
-.mode-description {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #64748b;
 }
 
 .button-group {
@@ -974,8 +975,8 @@ textarea:focus {
 .send-button {
   padding: 10px 20px;
   border-radius: 8px;
-  background-color: #10B981;
-  color: white;
+  background-color: var(--aihelper-chat);
+  color: var(--font-color);
   border: none;
   cursor: pointer;
   display: flex;
@@ -1001,31 +1002,6 @@ textarea:focus {
 .chat-response {
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-/* 分析结果样式 */
-.score-section {
-  background-color: #f0fdf4;
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.score-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.score-label {
-  font-weight: 600;
-  color: #059669;
-}
-
-.score {
-  font-size: 24px;
-  font-weight: bold;
-  color: #10B981;
 }
 
 .section-title {
@@ -1073,41 +1049,7 @@ textarea:focus {
   font-weight: 500;
 }
 
-/* Add new styles for the analysis report */
-.analysis-report {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.report-header {
-  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-  padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: white;
-  border-radius: 12px 12px 0 0;
-}
-
-.report-title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.report-title h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.report-subtitle {
-  font-size: 14px;
-  opacity: 0.8;
-}
-
+/* 用于导出部分的css样式 */
 .report-actions {
   display: flex;
   gap: 12px;
@@ -1123,24 +1065,13 @@ textarea:focus {
   top: 100%;
   right: 0;
   margin-top: 8px;
-  background: white;
+  background: var(--aihelper-modebg);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   padding: 8px;
   min-width: 180px;
   z-index: 1000;
   animation: slideIn 0.2s ease;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 .export-option {
@@ -1151,7 +1082,7 @@ textarea:focus {
   padding: 12px 16px;
   border: none;
   background: none;
-  color: #1F2937;
+  color: var(--aihelper-modetxt);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1177,15 +1108,19 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 8px;
+  border: none; /* 去掉边框 */
+  background: none; /* 可选：去掉背景 */
+  cursor: pointer; /* 确保光标为手型 */
 }
-
-.export-btn i.fa-chevron-down {
-  font-size: 12px;
-  transition: transform 0.2s ease;
-}
-
-.export-dropdown:hover .export-btn i.fa-chevron-down {
-  transform: rotate(180deg);
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .history-header {
@@ -1252,4 +1187,45 @@ textarea:focus {
     width: 100%;
   }
 }
+
+.analysis-report {
+  border: 2px solid #3a8ee6;           /* 突出重点的边框颜色 */
+  background-color: var(--aihelper-modebg);           /* 温和的背景色 */
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.score-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.score-label {
+  font-color: var(--font-color);
+  margin-right: 10px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.score {
+  color: #3a8ee6;
+  font-size: 40px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.detail-prompt {
+  font-size: 14px;
+  font-color: var(--font-color);;
+  margin-bottom: 15px;
+}
+
 </style>
