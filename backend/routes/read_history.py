@@ -2,7 +2,7 @@ from datetime import datetime
 
 from flask import Blueprint, request, jsonify
 from models import db, ReadHistory,Newslist,Newsread
-from sqlalchemy import func
+from sqlalchemy import func, and_
 
 read_history_bp = Blueprint('read_history', __name__)
 
@@ -33,36 +33,95 @@ def add_read_history(news_id):
     db.session.commit()
     return jsonify({"msg": "新的阅读历史记录已创建"}), 201
 
-#获取阅读历史记录
+# #获取阅读历史记录
+# @read_history_bp.route('/user/<string:username>', methods=['GET'])
+# def get_user_read_history(username):
+#     records = (
+#         db.session.query(ReadHistory, Newslist, Newsread)
+#         .join(Newslist, ReadHistory.news_id == Newslist.id)  # 连接 Newslist 表
+#         .join(Newsread, (ReadHistory.news_id == Newsread.news_id) & (Newsread.username == username))  # 连接 Newsread 表
+#         .filter(ReadHistory.username == username)
+#         .filter(ReadHistory.read_time >0)
+#         .all()
+#     )
+#
+#     # 将结果转换为字典格式
+#     result = []
+#     for read_history, news, news_read in records:
+#         result.append({
+#             "id": read_history.id,
+#             "date": read_history.created_at,
+#             "news_id": news.id,
+#             "title": news.title,
+#             "content": news.content,
+#             "category": news.category,
+#             "source": news.source,
+#             "readtime": read_history.read_time,
+#             "is_finished": news_read.is_finished,  # 从 Newsread 表获取是否读完
+#             "is_favorite": news_read.is_favorite,  # 从 Newsread 表获取收藏状态
+#         })
+#
+#     return jsonify(result), 200
+#获取阅读历史记录，只会返回每一天的最后的阅读记录
 @read_history_bp.route('/user/<string:username>', methods=['GET'])
 def get_user_read_history(username):
+    # 获取每个新闻每天的最后阅读时间
+    date_subquery = (
+        db.session.query(
+            ReadHistory.news_id,
+            func.date(ReadHistory.created_at).label('read_date'),
+            func.max(ReadHistory.created_at).label('last_read_time')
+        )
+        .filter(
+            ReadHistory.username == username,
+            ReadHistory.read_time > 0
+        )
+        .group_by(
+            ReadHistory.news_id,
+            func.date(ReadHistory.created_at)
+        )
+        .subquery()
+    )
+
+    # 获取最终需要的历史记录
     records = (
         db.session.query(ReadHistory, Newslist, Newsread)
-        .join(Newslist, ReadHistory.news_id == Newslist.id)  # 连接 Newslist 表
-        .join(Newsread, (ReadHistory.news_id == Newsread.news_id) & (Newsread.username == username))  # 连接 Newsread 表
-        .filter(ReadHistory.username == username)
-        .filter(ReadHistory.read_time >0)
+        .join(
+            date_subquery,
+            and_(
+                ReadHistory.news_id == date_subquery.c.news_id,
+                ReadHistory.created_at == date_subquery.c.last_read_time
+            )
+        )
+        .join(Newslist, ReadHistory.news_id == Newslist.id)
+        .join(
+            Newsread,
+            and_(
+                ReadHistory.news_id == Newsread.news_id,
+                Newsread.username == username
+            )
+        )
+        .order_by(ReadHistory.created_at.desc())
         .all()
     )
 
-    # 将结果转换为字典格式
+    # 构建返回结果
     result = []
     for read_history, news, news_read in records:
         result.append({
             "id": read_history.id,
-            "date": read_history.created_at,
+            "date": read_history.created_at.isoformat(),
             "news_id": news.id,
             "title": news.title,
             "content": news.content,
             "category": news.category,
             "source": news.source,
             "readtime": read_history.read_time,
-            "is_finished": news_read.is_finished,  # 从 Newsread 表获取是否读完
-            "is_favorite": news_read.is_favorite,  # 从 Newsread 表获取收藏状态
+            "is_finished": news_read.is_finished,
+            "is_favorite": news_read.is_favorite,
         })
 
     return jsonify(result), 200
-
 # 删除阅读记录(会全部删除)，并取消newsread表的收藏和已阅读
 @read_history_bp.route('/deleterecord/<int:id>', methods=['DELETE'])
 def delete_read_history(id):

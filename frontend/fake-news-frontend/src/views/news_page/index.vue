@@ -1,47 +1,66 @@
 <template>
   <div class="news-container">
     <!-- 搜索和筛选区域 -->
-    <div class="search-filters">
-      <el-input
-        v-model="searchQuery"
-        placeholder="搜索新闻..."
-        class="search-input"
-        @input="debounceSearch"
-        clearable
-      >
-        <template #prefix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
-
-      <el-select v-model="selectedSource" placeholder="选择来源" clearable @change="fetchNews">
-        <el-option
-          v-for="source in sources"
-          :key="source.name"
-          :label="`${source.name} (${source.count})`"
-          :value="source.name"
-        />
-      </el-select>
-
-      <el-date-picker
-        v-model="dateRange"
-        type="daterange"
-        placeholder="选择日期范围"
-        @change="fetchNews"
-        style="width: 250px;"
-      />
-    </div>
+    <el-card class="search-card" >
+      <el-row :gutter="20">
+        <el-col :span="8">
+          <el-input
+            v-model="searchKeyword"
+            placeholder="搜索新闻标题或内容"
+            clearable
+            class="search-input"
+            @keyup.enter="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-col>
+        <el-col :span="6">
+          <el-select
+            v-model="categoryFilter"
+            placeholder="新闻分类"
+            class="filter-select"
+            clearable
+            @change="handleFilterChange"
+          >
+            <el-option label="全部" value="" />
+            <el-option label="社会" value="社会" />
+            <el-option label="科技" value="科技" />
+            <el-option label="财经" value="财经" />
+            <el-option label="体育" value="体育" />
+            <el-option label="娱乐" value="娱乐" />
+            <el-option label="其它" value="其它" />
+          </el-select>
+        </el-col>
+        <el-col :span="8">
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            class="date-picker"
+            clearable
+            @change="handleDateChange"
+          />
+        </el-col>
+        <el-col :span="2">
+          <el-button type="primary" :icon="Refresh" circle @click="refreshData" />
+        </el-col>
+      </el-row>
+    </el-card>
 
     <!-- 新闻网格 -->
     <div class="news-grid">
-      <el-empty v-if="news.length === 0" description="暂无新闻" />
+      <el-empty v-if="paginatedNews.length === 0" description="暂无新闻" />
 
       <transition-group name="news-fade">
         <div
-          v-for="item in news"
+          v-for="item in paginatedNews"
           :key="item.id"
           class="news-grid-item"
-          @click="item?showNewsDetail(item) :null"
+          @click="item ? showNewsDetail(item) : null"
         >
           <div class="news-card">
             <el-image
@@ -70,86 +89,101 @@
                   真实度: {{ formatScore(item.fake_score) }}
                 </el-tag>
               </div>
-              <p class="news-description">{{ item.description }}</p>
             </div>
           </div>
         </div>
       </transition-group>
     </div>
 
+    <!-- 分页 -->
+    <div class="pagination">
+      <el-pagination
+      v-if="!loading && paginatedNews.length > 0"
+      :current-page="currentPage"
+      :page-size="itemsPerPage"
+      :total="filteredNews.length"
+      :page-sizes="[12, 15, 24, 30]"
+      layout="total, sizes, prev, pager, next, jumper"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      background
+  />
+  </div>
+
     <!-- 新闻详情弹窗 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="selectedNews?.title"
-      width="80%"
-      class="news-dialog"
-      @close="closeDialog"
-      destroy-on-close
-    >
-      <div v-if="selectedNews" class="dialog-content">
-        <div class="article-meta">
-          <el-tag size="small" type="info">{{ selectedNews.source }}</el-tag>
-          <span class="time">{{ formatTime(selectedNews.ctime) }}</span>
-          <div class="detection-info">
-            <el-tag
-              :type="getFakeNewsTagType(selectedNews.fake_score)"
-              effect="dark"
-              @click="$router.push('/textdetect')"
+    <div class="dialog-wrapper">
+      <el-dialog
+        v-model="dialogVisible"
+        :title="selectedNews?.title"
+        width="80%"
+        class="news-dialog"
+        @close="closeDialog"
+        destroy-on-close
+      >
+        <div v-if="selectedNews" class="dialog-content">
+          <div class="article-meta">
+            <el-tag size="small" type="info">{{ selectedNews.source }}</el-tag>
+            <span class="time">{{ formatTime(selectedNews.ctime) }}</span>
+            <div class="detection-info">
+              <el-tag
+                :type="getFakeNewsTagType(selectedNews.fake_score)"
+                effect="dark"
+                @click="$router.push('/textdetect')"
+              >
+                真实度: {{ formatScore(selectedNews.fake_score) }}
+              </el-tag>
+            </div>
+            <el-button
+              type="warning"
+              @click="toggleFavorite(selectedNews)"
             >
-              真实度: {{ formatScore(selectedNews.fake_score) }}
-            </el-tag>
+              {{ selectedNews.is_favorite ? '取消收藏' : '收藏' }}
+            </el-button>
+            <a :href="selectedNews.url" target="_blank" class="source-link">
+              <el-button type="primary" size="small">查看原文</el-button>
+            </a>
           </div>
-          <el-button
-            type="warning"
-            @click="toggleFavorite(selectedNews)"
-          >
-            {{ selectedNews.is_favorite ? '取消收藏' : '收藏' }}
-          </el-button>
-          <a :href="selectedNews.url" target="_blank" class="source-link">
-            <el-button type="primary" size="small">查看原文</el-button>
-          </a>
-        </div>
 
-        <div class="article-main">
-          <el-image
-            v-if="selectedNews.picUrl"
-            :src="selectedNews.picUrl"
-            class="article-image"
-            fit="cover"
-          />
+          <div class="article-main">
+            <el-image
+              v-if="selectedNews.picUrl"
+              :src="selectedNews.picUrl"
+              class="article-image"
+              fit="cover"
+            />
 
-          <div v-if="selectedNews.content" class="article-content">
-            <p v-for="(paragraph, index) in formatContent(selectedNews.content)" :key="index">
-              {{ paragraph }}
-            </p>
+            <div v-if="selectedNews.content" class="article-content">
+              <p v-for="(paragraph, index) in formatContent(selectedNews.content)" :key="index">
+                {{ paragraph }}
+              </p>
+            </div>
+            <div v-else class="loading-content">
+              <el-skeleton :rows="10" animated />
+            </div>
           </div>
-          <div v-else class="loading-content">
-            <el-skeleton :rows="10" animated />
-          </div>
-        </div>
 
-        <!-- 相关新闻 -->
-        <div v-if="relatedNews.length > 0" class="related-news">
-          <h3>相关新闻</h3>
-          <div class="related-news-grid">
-            <div
-              v-for="news in relatedNews"
-              :key="news.id"
-              class="related-news-item"
-              @click="showNewsDetail(news)"
-            >
-              <el-image
-                :src="news.picUrl || defaultImage"
-                class="related-news-image"
-                fit="cover"
-              />
-              <div class="related-news-title">{{ news.title }}</div>
+          <!-- 相关新闻 -->
+          <div v-if="relatedNews.length > 0" class="related-news">
+            <h3>相关新闻</h3>
+            <div class="related-news-grid">
+              <div
+                v-for="news in relatedNews"
+                :key="news.id"
+                class="related-news-item"
+                @click="showNewsDetail(news)"
+              >
+                <el-image
+                  :src="news.picUrl || defaultImage"
+                  class="related-news-image"
+                  fit="cover"
+                />
+                <div class="related-news-title">{{ news.title }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </el-dialog>
-
+      </el-dialog>
+    </div>
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-overlay">
       <el-loading :fullscreen="true" />
@@ -160,34 +194,55 @@
 <script>
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-import { ref, onMounted } from 'vue';
-import { Search, Picture } from '@element-plus/icons-vue';
+import { ref, onMounted, watch, computed } from 'vue';
+import { Search, Picture,Refresh } from '@element-plus/icons-vue';
 import debounce from 'lodash/debounce';
+import { useRoute, useRouter } from 'vue-router';
 
 export default {
   name: 'NewsPage',
   components: {
     Search,
-    Picture
+    Picture,
   },
-  setup() {
+  props: {
+    newsId: {
+      type: String,
+      default: ''
+    },
+    autoOpen: {
+      type: String,
+      default: 'false'
+    }
+  },
+  setup(props) {
+    const route = useRoute();
+    const router = useRouter();
     const news = ref([]);
     const selectedNews = ref(null);
     const relatedNews = ref([]);
     const loading = ref(false);
     const searchQuery = ref('');
     const selectedSource = ref('');
-    const dateRange = ref('');
     const sources = ref([]);
     const sourceStats = ref([]);
     const defaultImage = 'http://localhost:8080/default-news.jpg';
     const dialogVisible = ref(false);
+    const readingTime = ref(0);
+    let readingInterval = null;
+    const currentPage = ref(1);
+    const itemsPerPage = 12; // 每页显示的新闻数量
+    const total = ref(0); // 总新闻数量
+    const searchInput = ref(''); // 新增中间搜索变量
+    const searchKeyword = ref('')
+    const categoryFilter = ref('')
+    const dateRange = ref([])
 
     //获取用户信息的函数
     const getUserInfo = () => {
       try {
         const userStr = localStorage.getItem('user');
-        console.log('从 localStorage 获取的用户信息:', userStr); // 添加调试信息
+        console.log('从 localStorage 获取的用户信息:', userStr);
         if (!userStr) {
           return { username: '未登录用户' };
         }
@@ -207,16 +262,23 @@ export default {
     const fetchNews = async () => {
       try {
         loading.value = true;
-        const params = {
-          query: searchQuery.value,
-          source: selectedSource.value,
-          date_range: dateRange.value,
-          username:username
-        };
-
-        const response = await axios.get('http://localhost:5000/news/get_news', { params});
+        const response = await axios.get('http://localhost:5000/news/get_news', {
+          params: { username: username }
+        });
         news.value = response.data.news;
         sources.value = response.data.sources;
+
+        // 如果有 newsId 参数，查找并显示对应的新闻
+        const targetNewsId = props.newsId || route.query.newsId;
+        if (targetNewsId) {
+          const targetNews = news.value.find(item => item.id === targetNewsId);
+          if (targetNews) {
+            await showNewsDetail(targetNews);
+          } else {
+            // 如果在当前列表中找不到，直接从服务器获取
+            await showNewsDetail(null);
+          }
+        }
       } catch (error) {
         console.error('获取新闻失败:', error);
         ElMessage.error('获取新闻列表失败');
@@ -224,57 +286,107 @@ export default {
         loading.value = false;
       }
     };
-    const readingTime = ref(0); // 用于记录阅读时间
-    let readingInterval = null; // 用于存储定时器
+
     // 获取新闻详情
     const showNewsDetail = async (newsItem) => {
       console.log('Selected news item:', newsItem);
       try {
         loading.value = true;
-        selectedNews.value = newsItem; // 设置选中的新闻
+        let targetNews = newsItem;
+
+        // 如果没有传入 newsItem，但有 newsId，则从服务器获取新闻详情
+        if (!newsItem && (props.newsId || route.query.newsId)) {
+          const newsId = props.newsId || route.query.newsId;
+          const response = await axios.get(`http://localhost:5000/news/news/${newsId}`);
+          if (response.data && response.data.news) {
+            targetNews = response.data.news;
+          } else {
+            throw new Error('未找到指定新闻');
+          }
+        }
+
+        if (!targetNews) {
+          throw new Error('新闻信息不存在');
+        }
+
+        selectedNews.value = targetNews;
         dialogVisible.value = true;
 
-    // 记录阅读历史
+        // 更新 URL，但不触发新的导航
+        router.replace({
+          path: '/newspage',
+          query: {
+            ...route.query,
+            newsId: targetNews.id,
+            autoOpen: 'true'
+          }
+        });
+
+        // 记录阅读历史
         const readHistoryData = {
-        news_id: newsItem.id,
-        read_time: 0,
-        is_finished: false,
-        is_favorite: false
-      };
-    // 发送初始阅读记录
-        await axios.post(`http://localhost:5000/readhistory/read_history/${newsItem.id}`, {readHistoryData,username:username});
+          news_id: targetNews.id,
+          read_time: 0,
+          is_finished: false,
+          is_favorite: false
+        };
 
-    // 开始计时
+        // 发送初始阅读记录
+        await axios.post(`http://localhost:5000/readhistory/read_history/${targetNews.id}`, {
+          readHistoryData,
+          username: username
+        });
+
+        // 开始计时
         readingInterval = setInterval(() => {
-        readingTime.value += 1;
-      }, 1000);
+          readingTime.value += 1;
+        }, 1000);
 
-    // 获取新闻详情
-        const response = await axios.get(`http://localhost:5000/news/news/${newsItem.id}`);
-        selectedNews.value = response.data.news;
-        relatedNews.value = response.data.related_news;
+        // 获取相关新闻
+        const detailResponse = await axios.get(`http://localhost:5000/news/news/${targetNews.id}`);
+        if (detailResponse.data.related_news) {
+          relatedNews.value = detailResponse.data.related_news;
+        }
+
       } catch (error) {
         console.error('获取新闻详情失败:', error);
-        ElMessage.error('获取新闻详情失败');
+        ElMessage.error(error.message || '获取新闻详情失败');
       } finally {
-      loading.value = false;
-    }
+        loading.value = false;
+      }
     };
-    // 关闭弹窗时更新阅读历史
+
+    // 关闭弹窗时更新阅读历史和 URL
     const closeDialog = async () => {
       dialogVisible.value = false;
       if (readingInterval) {
         clearInterval(readingInterval); // 清除定时器
       }
 
-  // 记录阅读历史
-      console.log(selectedNews.value.id);
-      await axios.post(`http://localhost:5000/readhistory/read_history/${selectedNews.value.id}`, {
-      read_time: readingTime.value, // 记录阅读时长
-      is_finished: true, // 假设用户已读完
-      username: username
-    });
-  };
+      // 记录阅读历史
+      if (selectedNews.value) {
+        await axios.post(`http://localhost:5000/readhistory/read_history/${selectedNews.value.id}`, {
+          read_time: readingTime.value,
+          is_finished: true,
+          username: username
+        });
+      }
+
+      // 移除 URL 中的 newsId 参数，但保持在 newspage 路径
+      const query = { ...route.query };
+      delete query.newsId;
+      delete query.autoOpen;
+      router.replace({ path: '/newspage', query });
+    };
+
+    // 监听路由参数变化
+    watch(
+      [() => searchQuery.value, () => selectedSource.value, () => dateRange.value],
+      () => {
+        currentPage.value = 1;
+      },
+      { deep: true }
+    );
+
     //收藏
     const toggleFavorite = async () => {
       try {
@@ -298,7 +410,7 @@ export default {
     };
     // 搜索防抖
     const debounceSearch = debounce(() => {
-      fetchNews();
+      searchQuery.value = searchInput.value;
     }, 300);
 
     // 格式化时间
@@ -344,8 +456,101 @@ export default {
       }
     };
 
-    onMounted(() => {
-      fetchNews();
+    // 过滤逻辑
+    const filteredNews = computed(() => {
+  let filtered = news.value;
+
+  // 关键词搜索（标题和内容）
+  if (searchKeyword.value) {
+    const query = searchKeyword.value.toLowerCase();
+    filtered = filtered.filter(item =>
+      item.title.toLowerCase().includes(query) ||
+      (item.content && item.content.toLowerCase().includes(query))
+    );
+  }
+
+  // 分类过滤
+  if (categoryFilter.value) {
+    filtered = filtered.filter(item => item.category === categoryFilter.value);
+  }
+
+  // 日期过滤
+  if (dateRange.value?.length === 2) {
+    const start = new Date(dateRange.value[0]);
+    const end = new Date(dateRange.value[1]);
+    end.setHours(23, 59, 59, 999);
+
+    filtered = filtered.filter(item => {
+      const itemDate = new Date(item.ctime);
+      return itemDate >= start && itemDate <= end;
+    });
+  }
+
+  return filtered;
+});
+
+    // 计算总页数
+    const totalPages = computed(() => {
+      return Math.ceil(filteredNews.value.length / itemsPerPage);
+    });
+
+    // 计算当前页的新闻
+    const paginatedNews = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage;
+      return filteredNews.value.slice(start, start + itemsPerPage);
+    });
+
+    // 翻页功能
+    const nextPage = () => {
+      if (currentPage.value < Math.ceil(filteredNews.value.length / itemsPerPage)) {
+        currentPage.value++;
+      }
+    };
+
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--;
+      }
+    };
+
+    // 处理页码变化
+    const handleCurrentChange = (page) => {
+      currentPage.value = page;
+    };
+
+    // 处理每页显示数量变化
+    const handleSizeChange = (size) => {
+      itemsPerPage.value = size;
+      currentPage.value = 1; // 重置为第一页
+    };
+
+    const handleSearch = () => {
+      currentPage.value = 1;
+    }
+
+    const handleFilterChange = () => {
+      currentPage.value = 1;
+    }
+
+    const handleDateChange = () => {
+      currentPage.value = 1;
+    }
+
+    // 修改后的刷新方法
+    const refreshData = () => {
+      searchKeyword.value = '';
+      categoryFilter.value = '';
+      dateRange.value = [];
+      currentPage.value = 1;
+      fetchNews()
+    }
+    // 监听搜索和来源变化，重置当前页
+    watch([searchQuery, selectedSource], () => {
+      currentPage.value = 1; // Reset to first page on filter change
+    });
+
+    onMounted(async () => {
+      await fetchNews();
     });
 
     return {
@@ -355,7 +560,6 @@ export default {
       loading,
       searchQuery,
       selectedSource,
-      dateRange,
       sources,
       sourceStats,
       defaultImage,
@@ -370,76 +574,62 @@ export default {
       formatDetectionDetails,
       closeDialog,
       toggleFavorite,
+      currentPage,
+      totalPages,
+      nextPage,
+      prevPage,
+      handleCurrentChange,
+      handleSizeChange,
+      paginatedNews,
+      total,
+      itemsPerPage,
+      filteredNews,
+      searchKeyword,
+      categoryFilter,
+      dateRange,
+      handleSearch,
+      handleFilterChange,
+      handleDateChange,
+      refreshData,
+      Refresh
     };
   }
 };
 </script>
 
 <style scoped>
+
 .news-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
 }
-
-.search-filters {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
+.search-card {
+  background: var(--bg-color);
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .search-input {
   flex: 1;
 }
 
-/* 新闻来源统计样式 */
-.source-stats {
-  margin-bottom: 32px;
-}
-
-.source-stats h3 {
-  margin-bottom: 16px;
-  color: var(--el-text-color-primary);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  transition: transform 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-}
-
-.stat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.stat-content {
-  color: var(--el-text-color-secondary);
-  font-size: 14px;
-}
 
 .news-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* 自适应列宽 */
+  grid-template-rows: auto; /* 启用瀑布流布局 */
+  gap: 16px; /* 统一间距 */
   margin-bottom: 24px;
 }
 
 .news-grid-item {
-  aspect-ratio: 1;
   cursor: pointer;
   transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .news-grid-item:hover {
@@ -447,8 +637,7 @@ export default {
 }
 
 .news-card {
-  height: 100%;
-  background: var(--el-bg-color);
+  background: var(--navbar-bg);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: var(--el-box-shadow-light);
@@ -458,19 +647,8 @@ export default {
 
 .news-image {
   width: 100%;
-  height: 50%;
+  max-height: 200px; /* 统一图片最大高度 */
   object-fit: cover;
-}
-
-.image-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--el-fill-color-light);
-  color: var(--el-text-color-secondary);
-  font-size: 32px;
 }
 
 .news-content {
@@ -481,10 +659,9 @@ export default {
 }
 
 .news-title {
-  margin: 0 0 12px;
   font-size: 16px;
+  font-color:var(--font-color);
   line-height: 1.4;
-  color: var(--el-text-color-primary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -492,7 +669,6 @@ export default {
 }
 
 .news-meta {
-  margin-bottom: 8px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -503,29 +679,11 @@ export default {
   font-size: 12px;
 }
 
-.news-description {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--el-text-color-regular);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
 /* 弹窗样式 */
-.news-dialog :deep(.el-dialog__header) {
-  padding: 20px;
-  margin-right: 0;
-  border-bottom: 1px solid var(--el-border-color-light);
-}
-
-.news-dialog :deep(.el-dialog__body) {
-  padding: 24px;
-}
 
 .dialog-content {
+  background: var(--bg-color);
+  color: var(--font-color);
   max-height: 70vh;
   overflow-y: auto;
 }
@@ -535,6 +693,36 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* 元素组件深色模式适配 */
+.dialog-wrapper :deep(.el-dialog) {
+  background-color: var(--bg-color); /* 修改对话框背景颜色 */
+  border-radius: 8px; /* 修改对话框圆角 */
+}
+
+.dialog-wrapper :deep(.el-dialog__header) {
+  background-color: var(--bg-color); /* 修改标题栏背景颜色 */
+}
+.dialog-wrapper :deep(.el-dialog__title) {
+  color: var(--newstitle-color) ; /* 修改标题文字颜色 */
+}
+.dialog-wrapper :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: white; /* 修改关闭按钮颜色 */
+}
+
+/* 滚动条深色模式适配 */
+.dialog-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dialog-content::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+.dialog-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
 }
 
 .source-link {
@@ -557,11 +745,12 @@ export default {
 .article-content {
   font-size: 16px;
   line-height: 1.8;
-  color: var(--el-text-color-primary);
+  color: var(--font-color);
 }
 
 .article-content p {
   margin-bottom: 1em;
+  color: var(--font-color);
 }
 
 .related-news {
@@ -600,7 +789,7 @@ export default {
 .related-news-title {
   font-size: 14px;
   line-height: 1.4;
-  color: var(--el-text-color-regular);
+  color: var(--font-color);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -693,4 +882,18 @@ export default {
   padding: 8px;
   border-radius: 4px;
 }
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 0;
+  width: 100%;
+}
+
 </style>

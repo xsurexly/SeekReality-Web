@@ -18,7 +18,7 @@ visualization_bp = Blueprint('visualization', __name__)
 cache_manager = CacheManager()
 vis_manager = VisualizationManager()
 
-
+#"E:/softwareInno/Defeat-All-Fake/backend/routes/overviewdb/database"
 
 try:
     # 初始化读取数据库信息
@@ -35,7 +35,7 @@ try:
         commentusers,
         fc2020,
         fcemotion,
-    ) = GetData("E:/softwareInno/Defeat-All-Fake/backend/routes/overviewdb/database").creat()
+    ) = GetData("D:/学习/大三下/软创创创/test4.0/Defeat-All-Fake/backend/routes/overviewdb/database").creat()
 
     # 创建数据副本
     print("Creating data copies...")
