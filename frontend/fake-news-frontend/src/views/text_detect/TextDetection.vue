@@ -5,7 +5,7 @@
       v-model="inputText"
       type="textarea"
       :rows="6"
-      placeholder="2请输入需要检测的文本内容"
+      placeholder="请输入需要检测的文本内容"
       resize="none"
     />
 

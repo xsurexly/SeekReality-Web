@@ -158,6 +158,7 @@ export default {
   background: var(--navbar-bg);
   color: var(--font-color);
   border: 0px solid #b5b5b5;
+  border-radius: 10px;
 }
 
 .chart-card:hover {

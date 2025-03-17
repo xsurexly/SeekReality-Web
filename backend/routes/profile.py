@@ -73,6 +73,7 @@ def upload_avatar():
         # 生成安全的文件名
         filename = secure_filename(f"avatar_{userid}_{file.filename}")
         file_path = os.path.join(upload_folder, filename)
+        print(file_path)
         
         # 保存文件
         file.save(file_path)

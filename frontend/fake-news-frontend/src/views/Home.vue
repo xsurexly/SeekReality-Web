@@ -177,6 +177,7 @@ export default {
       return '#F56C6C'
     }
 
+
     // 初始化空的阅读统计数据
     const readingStats = ref([]);
 

@@ -3,7 +3,7 @@ from routes.overviewbp.cache_manager import CacheManager
 from routes.overviewbp.visualization_manager import VisualizationManager
 from datetime import datetime, timedelta
 from sqlalchemy import func, extract
-from models import Newslist, Newsread, db
+from models import Newslist, Newsread, db,ReadHistory,DetectionHistory
 import json
 import copy
 import os
@@ -35,7 +35,7 @@ try:
         commentusers,
         fc2020,
         fcemotion,
-    ) = GetData("D:/学习/大三下/软创创创/test4.0/Defeat-All-Fake/backend/routes/overviewdb/database").creat()
+    ) = GetData("../backend/routes/overviewdb/database").creat()
 
     # 创建数据副本
     print("Creating data copies...")
@@ -336,3 +336,154 @@ def get_theme_river_data():
     except Exception as e:
         print(f"Error getting theme river data: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+@visualization_bp.route('/get-user-data', methods=['GET'])
+def get_user_data():
+    user_id = request.args.get('user_id')
+    username = request.args.get('username')
+
+    if not username or not user_id:
+        return jsonify({'success': False, 'message': '缺少 user_id 或 username'}), 400
+    
+    # 获取阅读历史
+    read_histories = ReadHistory.query.filter_by(username=username).all()
+    reading_time_distribution = {
+        '<1min': 0,
+        '1-3min': 0,
+        '3-5min': 0,
+        '5-10min': 0,
+        '>10min': 0
+    }
+
+    for history in read_histories:
+        if history.read_time < 60:
+            reading_time_distribution['<1min'] += 1
+        elif 60 <= history.read_time < 180:
+            reading_time_distribution['1-3min'] += 1
+        elif 180 <= history.read_time < 300:
+            reading_time_distribution['3-5min'] += 1
+        elif 300 <= history.read_time < 600:
+            reading_time_distribution['5-10min'] += 1
+        else:
+            reading_time_distribution['>10min'] += 1
+
+    # 获取检测历史
+    detection_histories = DetectionHistory.query.filter_by(user_id=user_id).all()
+    detection_results = {
+        '真实新闻': 0,
+        '疑似虚假': 0
+    }
+
+    for detection in detection_histories:
+        if detection.result == '真实':
+            detection_results['真实新闻'] += 1
+        else:
+            detection_results['疑似虚假'] += 1
+
+    # 获取每日阅读量趋势
+    volume_trend = get_daily_reading_volume(username,user_id)
+
+    # 获取今日统计数据
+    today_stats = get_today_statistics(username,user_id)
+
+    return jsonify({
+        'success': True,
+        'data': {
+            'readingTimeDistribution': reading_time_distribution,
+            'volumeTrendDates': volume_trend['dates'],
+            'volumeTrendValues': volume_trend['values'],
+            'detectionResults': detection_results,
+            'todayChecks': today_stats['today_checks'],
+            'todayReads': today_stats['today_reads'],
+            'todayTime': today_stats['today_time'],
+            'riskCount': today_stats['risk_count']
+        }
+    }), 200
+
+def get_daily_reading_volume(username,user_id):
+    """
+    获取用户过去30天的每日阅读量趋势
+    :param user_id: 用户ID
+    :return: 一个字典，包含日期列表和对应的阅读量列表
+    """
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+
+    # 计算过去30天的日期范围
+    today = datetime.utcnow().date()
+    start_date = today - timedelta(days=29)
+
+    # 查询过去30天每天的阅读量
+    reading_volumes = db.session.query(
+        func.date(ReadHistory.created_at).label('date'),
+        func.count(ReadHistory.id).label('count')
+    ).filter(
+        ReadHistory.username == username,
+        ReadHistory.created_at >= start_date
+    ).group_by(
+        func.date(ReadHistory.created_at)
+    ).all()
+
+    # 将查询结果转换为字典，便于后续处理
+    volume_dict = {date.isoformat(): count for date, count in reading_volumes}
+
+    # 生成过去30天的日期列表
+    dates = [(today - timedelta(days=i)).isoformat() for i in range(29, -1, -1)]
+
+    # 按日期顺序填充结果，未有阅读记录的日期填充为0
+    values = [volume_dict.get(date, 0) for date in dates]
+
+    return {
+        'dates': dates,
+        'values': values
+    }
+
+
+def get_today_statistics(username,user_id):
+    """
+    获取用户今天的统计数据
+    :param user_id: 用户ID
+    :return: 一个字典，包含今日检测次数、今日阅读量、今日阅读时长和高风险内容数量
+    """
+    from datetime import datetime, timedelta
+
+    # 获取今天的开始和结束时间
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = today_start + timedelta(days=1)
+
+    # 今日检测次数
+    today_checks = DetectionHistory.query.filter(
+        DetectionHistory.user_id == user_id,
+        DetectionHistory.detected_at >= today_start,
+        DetectionHistory.detected_at < today_end
+    ).count()
+
+    # 今日阅读量
+    today_reads = ReadHistory.query.filter(
+        ReadHistory.username == username,
+        ReadHistory.created_at >= today_start,
+        ReadHistory.created_at < today_end
+    ).count()
+
+    # 今日阅读时长（单位：分钟）
+    today_time = db.session.query(func.sum(ReadHistory.read_time)).filter(
+        ReadHistory.username == username,
+        ReadHistory.created_at >= today_start,
+        ReadHistory.created_at < today_end
+    ).scalar() or 0 // 60
+
+    # 高风险内容数量
+    risk_count = DetectionHistory.query.filter(
+        DetectionHistory.user_id == user_id,
+        DetectionHistory.result == '疑似虚假',
+        DetectionHistory.detected_at >= today_start,
+        DetectionHistory.detected_at < today_end
+    ).count()
+
+    return {
+        'today_checks': today_checks,
+        'today_reads': today_reads,
+        'today_time': today_time,
+        'risk_count': risk_count
+    }

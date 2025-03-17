@@ -5,6 +5,33 @@
     <h5 class="sub-title">数据可视化展示了用户最近阅读新闻情况和上传检测新闻的情况</h5>
     <p class="update-time">数据更新时间：{{ currentTime }}</p>
 
+    <!-- 数据概览 -->
+    <el-card class="data-view">
+        <template #header>
+          <div class="card-header">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>实时数据概览</span>
+          </div>
+        </template>
+        <div class="stats-container">
+          <div class="stat-item">
+            <label>今日检测次数</label>
+            <el-statistic :value="stats.todayChecks" />
+          </div>
+          <div class="stat-item">
+            <label>今日阅读量</label>
+            <el-statistic :value="stats.todayReads" />
+          </div>
+          <div class="stat-item">
+            <label>今日阅读时长</label>
+            <el-statistic :value="stats.todayTime" suffix="分钟" />
+          </div>
+          <div class="stat-item">
+            <label>高风险内容</label>
+            <el-statistic :value="stats.riskCount" />
+          </div>
+        </div>
+      </el-card>
 
     <!-- 数据卡片容器 -->
     <div class="data-cards">
@@ -24,7 +51,7 @@
         <template #header>
           <div class="card-header">
             <el-icon><Histogram /></el-icon>
-            <span>周阅读量趋势</span>
+            <span>每日阅读量趋势</span>
           </div>
         </template>
         <div ref="volumeChart" class="chart-container" style="width: 100%; height: 400px"></div>
@@ -39,52 +66,6 @@
           </div>
         </template>
         <div ref="detectChart" class="chart-container" style="width: 100%; height: 400px"></div>
-      </el-card>
-
-      <!-- 用户互动 -->
-      <el-card class="card-item">
-        <template #header>
-          <div class="card-header">
-            <el-icon><Histogram /></el-icon>
-            <span>用户互动分布</span>
-          </div>
-        </template>
-        <div ref="interactionChart" class="chart-container" style="width: 100%; height: 400px"></div>
-      </el-card>
-
-      <!-- 内容类型分布 -->
-      <el-card class="card-item">
-        <template #header>
-          <div class="card-header">
-            <el-icon><PieChart /></el-icon>
-            <span>内容类型分布</span>
-          </div>
-        </template>
-        <div ref="contentTypeChart" class="chart-container" style="width: 100%; height: 400px"></div>
-      </el-card>
-
-      <!-- 数据概览 -->
-      <el-card class="card-item">
-        <template #header>
-          <div class="card-header">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>实时数据概览</span>
-          </div>
-        </template>
-        <div class="stats-container">
-          <div class="stat-item">
-            <label>今日检测量</label>
-            <el-statistic :value="stats.todayChecks" />
-          </div>
-          <div class="stat-item">
-            <label>准确率</label>
-            <el-statistic :value="stats.accuracy" suffix="%" />
-          </div>
-          <div class="stat-item">
-            <label>高风险内容</label>
-            <el-statistic :value="stats.riskCount" />
-          </div>
-        </div>
       </el-card>
     </div>
     <!-- 地图 -->
@@ -116,118 +97,125 @@ export default {
     // 响应式数据
     const currentTime = ref(new Date().toLocaleString())
     const stats = ref({
-      todayChecks: 2456,
-      accuracy: 92.4,
-      riskCount: 186
+      todayChecks: 0,
+      todayReads: 0,
+      todayTime: 0,
+      riskCount: 0
     })
 
     // 图表引用
     const timeChartRef = ref(null)
     const volumeChartRef = ref(null)
     const detectChartRef = ref(null)
-    const interactionChartRef = ref(null)
-    const contentTypeChartRef = ref(null)
 
     let timeChart = null
     let volumeChart = null
     let detectChart = null
-    let interactionChart = null
-    let contentTypeChart = null
+
+    // 获取用户数据
+    const fetchUserData = async () => {
+      const username = localStorage.getItem('username');
+      const user_id = localStorage.getItem('userid');
+      console.log('Username:',username)
+      console.log('UserID:', user_id)
+
+      // 检查参数完整性
+      if (!username || !user_id) {
+        console.error('缺少用户标识参数');
+        return;
+      }
+
+      try {
+        const response = await fetch('/visualization/get-user-data?user_id=${user_id}&username=${username}', {
+          method: 'GET'
+        });
+        const text = await response.text();  // 先打印原始内容
+        console.log('服务器返回内容:', text);
+
+        const data = JSON.parse(text);  // 手动解析 JSON
+        console.log('返回的数据:', data);
+
+        if (data.success) {
+          console.log('Received data:', data.data);
+          initCharts(data.data);
+          updateStats(data.data);
+        } else {
+          console.error('获取数据失败:', data.message);
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+      }
+    }
+
+    // 更新统计数据
+    const updateStats = (data) => {
+      stats.value.todayChecks = data.todayChecks || 0;
+      stats.value.todayReads = data.todayReads || 0;
+      stats.value.todayTime = data.todayTime || 0;
+      stats.value.riskCount = data.riskCount || 0;
+    }
 
     // 图表初始化
-    const initCharts = () => {
+    const initCharts = (data) => {
+      console.log('Chart Data:', data); 
       nextTick(() => {
-        // 阅读时长分布（柱状图）
-        if (timeChartRef.value && !timeChart) {
-          timeChart = echarts.init(timeChartRef.value)
-          timeChart.setOption({
-            xAxis: {
-              type: 'category',
-              data: ['<1min', '1-3min', '3-5min', '5-10min', '>10min']
-            },
-            yAxis: { type: 'value' },
-            series: [{
-              data: [120, 200, 150, 80, 70],
-              type: 'bar',
-              itemStyle: { color: '#409EFF' }
-            }]
-          })
+        if (!timeChartRef.value || !volumeChartRef.value || !detectChartRef.value) {
+          console.error('图表容器未找到');
+          return;
         }
+        // 销毁旧实例（防止内存泄漏）
+        if (timeChart) timeChart.dispose();
+        if (volumeChart) volumeChart.dispose();
+        if (detectChart) detectChart.dispose();
 
-        // 周阅读趋势（折线图）
-        if (volumeChartRef.value && !volumeChart) {
-          volumeChart = echarts.init(volumeChartRef.value)
-          volumeChart.setOption({
-            xAxis: {
-              type: 'category',
-              data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-            },
-            yAxis: { type: 'value' },
-            series: [{
-              data: [820, 932, 901, 934, 1290, 1330, 1320],
-              type: 'line',
-              smooth: true,
-              areaStyle: { color: 'rgba(64, 158, 255, 0.2)' }
-            }]
-          })
-        }
+        // 初始化新实例
+        timeChart = echarts.init(timeChartRef.value);
+        volumeChart = echarts.init(volumeChartRef.value);
+        detectChart = echarts.init(detectChartRef.value);
+
+        // 阅读时长分布（柱状图）
+        timeChart.setOption({
+          title: { text: '阅读时长分布', left: 'center' },
+          tooltip: {},
+          xAxis: {
+            type: 'category',
+            data: Object.keys(data.readingTimeDistribution)
+          },
+          yAxis: { type: 'value' },
+          series: [{
+            data: Object.values(data.readingTimeDistribution),
+            type: 'bar',
+            itemStyle: { color: '#409EFF' }
+          }]
+        });
+
+        // 每日阅读量趋势（折线图）
+        volumeChart.setOption({
+          xAxis: {
+            type: 'category',
+            data: data.volumeTrendDates
+          },
+          yAxis: {
+            type: 'value'
+          },
+          series: [{
+            data: data.volumeTrendValues,
+            type: 'line'
+          }]
+        });
 
         // 检测结果（饼图）
-        if (detectChartRef.value && !detectChart) {
-          detectChart = echarts.init(detectChartRef.value)
-          detectChart.setOption({
-            series: [{
-              type: 'pie',
-              data: [
-                { value: 735, name: '真实新闻' },
-                { value: 265, name: '疑似虚假' }
-              ],
-              radius: '65%',
-              label: {
-                formatter: '{b}: {d}%'
-              },
-              color: ['#67C23A', '#F56C6C']
-            }]
-          })
-        }
-
-        // 用户互动（柱状图）
-        if (interactionChartRef.value && !interactionChart) {
-          interactionChart = echarts.init(interactionChartRef.value)
-          interactionChart.setOption({
-            xAxis: {
-              type: 'category',
-              data: ['评论', '点赞', '分享', '阅读']
+        detectChart.setOption({
+          series: [{
+            type: 'pie',
+            data: Object.entries(data.detectionResults).map(([name, value]) => ({ name, value })),
+            radius: '65%',
+            label: {
+              formatter: '{b}: {d}%'
             },
-            yAxis: { type: 'value' },
-            series: [{
-              data: [500, 1200, 800, 3500],
-              type: 'bar',
-              itemStyle: { color: '#67C23A' }
-            }]
-          })
-        }
-
-        // 内容类型分布（饼图）
-        if (contentTypeChartRef.value && !contentTypeChart) {
-          contentTypeChart = echarts.init(contentTypeChartRef.value)
-          contentTypeChart.setOption({
-            series: [{
-              type: 'pie',
-              data: [
-                { value: 400, name: '政治' },
-                { value: 300, name: '娱乐' },
-                { value: 250, name: '体育' },
-                { value: 100, name: '科技' }
-              ],
-              radius: '65%',
-              label: {
-                formatter: '{b}: {d}%'
-              },
-              color: ['#409EFF', '#67C23A', '#F56C6C', '#E6A23C']
-            }]
-          })
-        }
+            color: ['#42b983', '#ff5252']
+          }]
+        });
 
         // 窗口resize监听
         window.addEventListener('resize', handleResize)
@@ -239,15 +227,11 @@ export default {
       timeChart?.resize()
       volumeChart?.resize()
       detectChart?.resize()
-      interactionChart?.resize()
-      contentTypeChart?.resize()
     }
 
     // 生命周期
     onMounted(() => {
-      // 添加延迟确保 DOM 完全渲染
-      setTimeout(initCharts, 100)
-
+      fetchUserData();
       setInterval(() => {
         currentTime.value = new Date().toLocaleString()
       }, 1000)
@@ -258,8 +242,6 @@ export default {
       timeChart?.dispose()
       volumeChart?.dispose()
       detectChart?.dispose()
-      interactionChart?.dispose()
-      contentTypeChart?.dispose()
     })
 
     return {
@@ -267,9 +249,7 @@ export default {
       stats,
       timeChartRef,
       volumeChartRef,
-      detectChartRef,
-      interactionChartRef,
-      contentTypeChartRef
+      detectChartRef
     }
   }
 }
@@ -313,10 +293,22 @@ export default {
   margin-top: 8px;
 }
 
+.data-view{
+  font-size: 14px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+}
+
+.data-view:hover {
+  transform: translateY(-5px);
+}
+
 .data-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 20px;
+  min-height: 400px;
+  border-radius: 10px;
 }
 
 .card-item {
@@ -325,6 +317,7 @@ export default {
   background: var(--navbar-bg);
   color: var(--font-color);
   border: 0px solid #b5b5b5;
+  border-radius: 10px;
 }
 
 .card-item:hover {
@@ -344,21 +337,22 @@ export default {
 
 .chart-container {
   height: 320px;
+  width: 100%;
   margin-top: 10px;
 }
 
 .stats-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  padding: 15px;
+  padding: 10px;
 }
 
 .stat-item {
   background: var(--navbar-bg);
   color: var(--font-color);
   border: 1px solid #b5b5b5;
-  padding: 20px;
+  padding: 10px;
   border-radius: 15px;
   text-align: center;
 }

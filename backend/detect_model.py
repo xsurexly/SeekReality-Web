@@ -2,8 +2,8 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 import torch
 
 # 加载模型和分词器
-model_path = r"D:\12006software\Defeat-All-Fake-main\Defeat-All-Fake-main\backend\model\FakeNewsModel"
-tokenizer_path=r"D:\12006software\Defeat-All-Fake-main\Defeat-All-Fake-main\backend\model\FakeNewsTokenizer"
+model_path = "../backend/model/FakeNewsModel"
+tokenizer_path="../backend/model/FakeNewsTokenizer"
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 
