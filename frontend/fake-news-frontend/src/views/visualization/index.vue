@@ -43,7 +43,7 @@
             <span>新闻阅读时长分布</span>
           </div>
         </template>
-        <div ref="timeChart" class="chart-container" style="width: 100%; height: 400px"></div>
+        <div ref="timeChartRef" class="chart-container" style="width: 100%; height: 300px"></div>
       </el-card>
 
       <!-- 阅读量趋势 -->
@@ -54,7 +54,7 @@
             <span>每日阅读量趋势</span>
           </div>
         </template>
-        <div ref="volumeChart" class="chart-container" style="width: 100%; height: 400px"></div>
+        <div ref="volumeChartRef" class="chart-container" style="width: 100%; height: 300px"></div>
       </el-card>
 
       <!-- 检测结果统计 -->
@@ -65,7 +65,7 @@
             <span>虚假新闻检测统计</span>
           </div>
         </template>
-        <div ref="detectChart" class="chart-container" style="width: 100%; height: 400px"></div>
+        <div ref="detectChartRef" class="chart-container" style="width: 100%; height: 300px"></div>
       </el-card>
     </div>
     <!-- 地图 -->
@@ -104,13 +104,13 @@ export default {
     })
 
     // 图表引用
-    const timeChartRef = ref(null)
-    const volumeChartRef = ref(null)
-    const detectChartRef = ref(null)
+    const timeChartRef = ref(null);
+    const volumeChartRef = ref(null);
+    const detectChartRef = ref(null);
 
-    let timeChart = null
-    let volumeChart = null
-    let detectChart = null
+    let timeChart =null;
+    let volumeChart =null;
+    let detectChart =null;
 
     // 获取用户数据
     const fetchUserData = async () => {
@@ -126,43 +126,48 @@ export default {
       }
 
       try {
-        const response = await fetch('/visualization/get-user-data?user_id=${user_id}&username=${username}', {
+        const response = await fetch(`http://localhost:5000/visualization/get-user-data?user_id=${user_id}&username=${username}`, {
           method: 'GET'
         });
         const text = await response.text();  // 先打印原始内容
         console.log('服务器返回内容:', text);
-
-        const data = JSON.parse(text);  // 手动解析 JSON
+        const data = JSON.parse(text);
         console.log('返回的数据:', data);
 
         if (data.success) {
           console.log('Received data:', data.data);
-          initCharts(data.data);
           updateStats(data.data);
+
+          // 等待 DOM 渲染完成
+          nextTick(() => {
+            console.log("检查 ref:", timeChartRef.value, volumeChartRef.value, detectChartRef.value);
+            
+            if (!timeChartRef.value || !volumeChartRef.value || !detectChartRef.value) {
+              console.error('图表容器未找到，尝试延迟初始化');
+              setTimeout(() => initCharts(data.data), 500); // 再等 500ms
+              return;
+            }
+            initCharts(data.data);
+          });
         } else {
           console.error('获取数据失败:', data.message);
         }
       } catch (error) {
         console.error('请求失败:', error);
       }
-    }
+    };
 
-    // 更新统计数据
     const updateStats = (data) => {
-      stats.value.todayChecks = data.todayChecks || 0;
-      stats.value.todayReads = data.todayReads || 0;
-      stats.value.todayTime = data.todayTime || 0;
-      stats.value.riskCount = data.riskCount || 0;
-    }
+      stats.value.todayChecks = Number(data.todayChecks) || 0;
+      stats.value.todayReads = Number(data.todayReads) || 0;
+      stats.value.todayTime = Number(data.todayTime) || 0;  // 确保是数字
+      stats.value.riskCount = Number(data.riskCount) || 0;
+    };
 
     // 图表初始化
     const initCharts = (data) => {
       console.log('Chart Data:', data); 
       nextTick(() => {
-        if (!timeChartRef.value || !volumeChartRef.value || !detectChartRef.value) {
-          console.error('图表容器未找到');
-          return;
-        }
         // 销毁旧实例（防止内存泄漏）
         if (timeChart) timeChart.dispose();
         if (volumeChart) volumeChart.dispose();
@@ -175,7 +180,6 @@ export default {
 
         // 阅读时长分布（柱状图）
         timeChart.setOption({
-          title: { text: '阅读时长分布', left: 'center' },
           tooltip: {},
           xAxis: {
             type: 'category',
@@ -185,7 +189,7 @@ export default {
           series: [{
             data: Object.values(data.readingTimeDistribution),
             type: 'bar',
-            itemStyle: { color: '#409EFF' }
+            color: '#409EFF'
           }]
         });
 
@@ -213,7 +217,7 @@ export default {
             label: {
               formatter: '{b}: {d}%'
             },
-            color: ['#42b983', '#ff5252']
+            color: ['rgb(148.6, 212.3, 117.1)', 'rgb(248, 152.1, 152.1)']
           }]
         });
 
@@ -231,10 +235,9 @@ export default {
 
     // 生命周期
     onMounted(() => {
-      fetchUserData();
-      setInterval(() => {
-        currentTime.value = new Date().toLocaleString()
-      }, 1000)
+      setTimeout(() => {
+        fetchUserData();
+      }, 500);
     })
 
     onBeforeUnmount(() => {

@@ -371,15 +371,15 @@ def get_user_data():
     # 获取检测历史
     detection_histories = DetectionHistory.query.filter_by(user_id=user_id).all()
     detection_results = {
-        '真实新闻': 0,
-        '疑似虚假': 0
+        '真实': 0,
+        '虚假': 0
     }
 
     for detection in detection_histories:
         if detection.result == '真实':
-            detection_results['真实新闻'] += 1
+            detection_results['真实'] += 1
         else:
-            detection_results['疑似虚假'] += 1
+            detection_results['虚假'] += 1
 
     # 获取每日阅读量趋势
     volume_trend = get_daily_reading_volume(username,user_id)
