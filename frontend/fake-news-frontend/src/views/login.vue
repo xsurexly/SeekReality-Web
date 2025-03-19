@@ -81,7 +81,7 @@ body, html {
   margin-bottom: 30px;
   text-align: center;
   align-items: center;
-  background-color: var(--container-bg);
+  background-color: var(--card-bg);
   padding: 60px;
   border-radius: 10px;
   box-shadow: #b5b5b5 0px 5px 15px;

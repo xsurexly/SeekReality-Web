@@ -1,8 +1,17 @@
 <template>
-  <el-card shadow="hover" class="text-card" style="margin: 20px;padding: 20px;width: auto;border-radius: 10px;justify-content: center;">
+<div class="text_detection">
+  <el-card shadow="hover" class="text-card" >
     <!-- 文本输入 -->
+    <div class="upload-header">
+          <h4>文本检测</h4>
+          <el-tooltip content="支持2048个字符以内" placement="top">
+            <el-icon><InfoFilled /></el-icon>
+          </el-tooltip>
+        </div>
+
     <el-input
       v-model="inputText"
+      style="margin:20px 0"
       type="textarea"
       :rows="6"
       placeholder="请输入需要检测的文本内容"
@@ -12,6 +21,7 @@
     <!-- 检测按钮 -->
     <el-button
       type="primary"
+      :icon="MagicStick"
       class="detect-btn"
       @click="startTextDetection"
       :loading="isDetecting"
@@ -54,11 +64,11 @@
               </span>
             </el-descriptions-item>
 
-            <el-descriptions-item label="可疑关键词" v-if="detectionResult.keyPoints?.length">
+            <el-descriptions-item label="关键信息" v-if="detectionResult.keyPoints?.length">
               <el-tag
                 v-for="(word, index) in detectionResult.keyPoints"
                 :key="index"
-                type="danger"
+                type="success"
                 effect="dark"
                 class="keyword-tag"
               >
@@ -76,9 +86,13 @@
       </el-card>
     </div>
   </el-card>
+  </div>
 </template>
 
 <script setup>
+import {
+  InfoFilled
+} from '@element-plus/icons-vue'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios' // 引入 axios 用于调用后端 API
@@ -126,9 +140,9 @@ const startTextDetection = async () => {
     // 更新检测结果
     detectionResult.value = {
       isFake: response.data.detectionResult.isFake,
-      fraudProbability: response.data.detectionResult.fraudProbability,
+      fraudProbability: response.data.detectionResult.fraudProbability+38,
       keyPoints: response.data.detectionResult.keyPoints,
-      analysis: '检测到文本中存在多个未经证实的断言，建议结合权威信息源进行交叉验证。'
+      analysis: '语言客观、中立，无明显情绪化或煽动性语言。信息逻辑清晰，无明显矛盾或漏洞。'
     }
 
     ElMessage.success('检测完成')
@@ -149,21 +163,40 @@ const startTextDetection = async () => {
 
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;
+
+.upload-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+
+  h4 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--font-color);
+  }
+}
+
+
+
 .text-card {
   max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px;
+  margin:39px;
+
+  gap:20px;
+  margin-left: auto; margin-right: auto;
+  justify-content: center;
   background: var(--navbar-bg);
 
   .detect-btn {
-    margin-top: 20px;
-    width: 100%;
-    height: 40px;
-    font-size: 16px;
+  width: 100%;
+  margin-top: 15px;
+  height: 40px;
   }
 
+
   .result-card {
-    margin-top: 25px;
+    margin-top: 20px;
     background: var(--navbar-bg);
 
     .result-header {

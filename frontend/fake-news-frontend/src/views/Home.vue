@@ -1,16 +1,54 @@
 <template>
   <div class="home-container">
-    <h1 class="main-title">首页</h1>
-    <el-row :gutter="30" style="margin-top: 30px;">
+    <div class="hello-part">
+      <el-avatar
+        :size="45"
+        :src="avatarUrl"
+        style="margin-left: 10px;margin-right: 20px;"
+        class="custom-avatar"
+      >
+        <img src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png" />
+      </el-avatar>
+      <span class="hello-text" style="margin-top:-30px">{{ greeting }}{{ user.username }}，欢迎进入智能虚假新闻检测平台</span>
+    </div>
+    
+    <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :span="15">
-        <el-card class="dashboard-item">
-          <div class="dashboard-item-content">
-            <h2 class="hello-text">你好，{{ user.username }}！</h2>
+        <!-- 数据概览 -->
+    <el-card class="data-view">
+        <template #header>
+          <div class="card-header">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>实时数据概览</span>
           </div>
-        </el-card>
+        </template>
+        <div class="stats-container">
+          <div class="stat-item">
+            <label>今日检测次数</label>
+            <el-statistic :value="stats.todayChecks" />
+          </div>
+          <div class="stat-item">
+            <label>今日阅读量</label>
+            <el-statistic :value="stats.todayReads" />
+          </div>
+          <div class="stat-item">
+            <label>今日阅读时长</label>
+            <el-statistic :value="stats.todayTime" />
+          </div>
+          <div class="stat-item">
+            <label>高风险内容</label>
+            <el-statistic :value="stats.riskCount" />
+          </div>
+        </div>
+      </el-card>
         <el-card class="dashboard-item" style="margin-top: 20px;">
+          <template #header>
+              <div class="card-header">
+                <el-icon><Grid /></el-icon>
+                <span>今日推荐</span>
+              </div>
+            </template>
           <div class="dashboard-item-content">
-            <h2>今日推荐</h2>
             <el-carousel
               :interval="4000"
               type="card"
@@ -39,9 +77,15 @@
           </div>
         </el-card>
 
-        <el-card class="dashboard-item" style="margin-top: 20px;">
+
+        <el-card class="dashboard-item"  style="margin-top: 20px;">
+          <template #header>
+              <div class="card-header">
+                <el-icon><Clock /></el-icon>
+                <span>阅读记录</span>
+              </div>
+            </template>
           <div class="dashboard-item-content">
-            <h2>阅读记录</h2>
             <el-calendar>
               <template #date-cell="{ data }">
                 <div class="calendar-cell">
@@ -71,10 +115,16 @@
           </div>
         </el-card>
       </el-col>
+
       <el-col :span="9">
         <el-card class="dashboard-item">
+          <template #header>
+              <div class="card-header">
+                <el-icon><Menu /></el-icon>
+                <span>常用功能</span>
+              </div>
+            </template>
           <div class="dashboard-item-content">
-            <h2>常用功能</h2>
             <div class="quick-access-grid">
               <el-card class="quick-access-item" @click="$router.push('/textdetect')">
                 <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-jilu" /></el-icon>
@@ -92,12 +142,27 @@
                 <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-pinlei" /></el-icon>
                 <span>新闻阅读</span>
               </el-card>
+              <el-card class="quick-access-item" @click="$router.push('/read_history')">
+                <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-pinlei" /></el-icon>
+                <span>阅读历史</span>
+              </el-card>
+              <el-card class="quick-access-item" @click="$router.push('/visualization')">
+                <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-pinlei" /></el-icon>
+                <span>数据可视化</span>
+              </el-card>
             </div>
           </div>
         </el-card>
+
+
         <el-card class="dashboard-item modern-fake-news" style="margin-top: 20px;">
+          <template #header>
+              <div class="card-header">
+                <el-icon><WarningFilled /></el-icon>
+                <span>常见虚假信息</span>
+              </div>
+            </template>
           <div class="modern-fake-news-header">
-            <h2>常见虚假信息</h2>
           </div>
           <div class="modern-fake-news-body">
             <div class="fake-news-grid">
@@ -111,10 +176,14 @@
             </div>
           </div>
         </el-card>
-
         <el-card class="dashboard-item" style="margin-top: 20px;">
+          <template #header>
+              <div class="card-header">
+                <el-icon><UploadFilled /></el-icon>
+                <span>最近上传</span>
+              </div>
+            </template>
           <div class="dashboard-item-content">
-            <h2>最近上传</h2>
             <el-table
               :data="recentUploads"
               style="width: 100%"
@@ -153,29 +222,116 @@
             </el-table>
           </div>
         </el-card>
+
+
       </el-col>
     </el-row>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,computed  } from 'vue';
 import axios from "axios";
 import router from "@/router";
-import { Picture } from '@element-plus/icons-vue';
+import {
+  Picture,
+  DataAnalysis,
+  Grid,
+  Menu,
+  WarningFilled,
+  UploadFilled,
+  Clock
+} from '@element-plus/icons-vue'
 
 export default {
   components: {
-    Picture
+    Picture,
+    DataAnalysis,
+    Grid,
+    Menu,
+    WarningFilled,
+    UploadFilled,
+    Clock
   },
   setup() {
-    const avatar = ref(localStorage.getItem('avatar') || 'avatar.png');
+    const avatar = ref(localStorage.getItem('avatar') || '')
+
+    // 计算头像URL
+    const avatarUrl = computed(() => {
+      if (!avatar.value) {
+        return 'https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png'
+      }
+
+      if (avatar.value.startsWith('http')) {
+        return avatar.value
+      }
+
+      return `http://localhost:5000${avatar.value}`
+    })
 
     const getConfidenceColor = (confidence) => {
       if (confidence >= 0.8) return '#67C23A'
       if (confidence >= 0.6) return '#E6A23C'
       return '#F56C6C'
     }
+    const stats = ref({
+      todayChecks: 0,
+      todayReads: 0,
+      todayTime: 0,
+      riskCount: 0
+    })
+
+    const greeting = ref("");
+    const getGreeting = () => {
+      const hour = new Date().getHours(); // 获取当前小时
+      if (hour >= 5 && hour < 12) {
+        return "早安！";
+      } else if (hour >= 12 && hour < 18) {
+        return "午安！";
+      } else {
+        return "晚安！";
+      }
+    };
+
+
+    const fetchUserData = async () => {
+      const username = localStorage.getItem('username');
+      const user_id = localStorage.getItem('userid');
+      console.log('Username:',username)
+      console.log('UserID:', user_id)
+
+      // 检查参数完整性
+      if (!username || !user_id) {
+        console.error('缺少用户标识参数');
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:5000/visualization/get-user-data?user_id=${user_id}&username=${username}`, {
+          method: 'GET'
+        });
+        const text = await response.text();  // 先打印原始内容
+        console.log('服务器返回内容:', text);
+        const data = JSON.parse(text);
+        console.log('返回的数据:', data);
+
+        if (data.success) {
+          console.log('Received data:', data.data);
+          updateStats(data.data);
+        } else {
+          console.error('获取数据失败:', data.message);
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+      }
+    };
+
+    const updateStats = (data) => {
+      stats.value.todayChecks = Number(data.todayChecks) || 0;
+      stats.value.todayReads = Number(data.todayReads) || 0;
+      stats.value.todayTime = Number(data.todayTime) || 0;  // 确保是数字
+      stats.value.riskCount = Number(data.riskCount) || 0;
+    };
 
 
     // 初始化空的阅读统计数据
@@ -342,6 +498,13 @@ export default {
       fetchReadingStats();
       fetchRecentUploads();
       fetchRecommendedNews();
+      fetchUserData();
+      greeting.value = getGreeting(); // 设置初始问候语
+
+      // 每分钟更新一次问候语
+      setInterval(() => {
+        greeting.value = getGreeting();
+      }, 600000);
     });
 
     return {
@@ -358,6 +521,9 @@ export default {
       defaultImage,
       navigateToNews,
       commonFakeNews,
+      stats,
+      greeting,
+      avatarUrl
     };
   }
 };
@@ -390,18 +556,24 @@ export default {
   height: 100%;
 }
 
-.hello-text {
+.hello-part {
   text-align: left;
-  margin-bottom: 20px;
-  font-weight: 400;
-  font-size: 20px;
+
+}
+
+.hello-text {
+  display: inline-block;
+  vertical-align: middle;
+  font-weight: 600;
+  font-size:24px;
+
 }
 
 .quick-access-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 15px;
-  margin-top: 10px;
+  margin-top: 5px;
 }
 
 .quick-access-item {
@@ -410,8 +582,10 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 5px 5px 0px 5px;
+  padding: 0px;
   background: var(--navbar-bg);
+  border-radius: 10px;
+
 }
 
 .quick-access-item:hover {
@@ -437,14 +611,14 @@ export default {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 15px;
-  margin-top: 15px;
+  margin-top: 5px;
 }
 
 /* 单个虚假信息卡片样式 */
 .fake-news-card {
   background: var(--navbar-bg);
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 6px 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   color: var(--font-color);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -533,6 +707,11 @@ export default {
   overflow: hidden;
 }
 
+.el-carousel__item:hover{
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
 :deep(.el-carousel__item--card) {
   border-radius: 8px;
 }
@@ -554,6 +733,8 @@ export default {
 .el-calendar {
   background-color: var(--navbar-bg);
   margin: 5px;
+  --el-calendar-selected-bg-color: var(--border-color) !important;
+  height: 80%;
 }
 
 .upload-stats {
@@ -565,9 +746,7 @@ export default {
   margin-bottom: 8px;
 }
 
-.stat-item:last-child {
-  margin-bottom: 0;
-}
+
 
 .stat-label {
   color: var(--font-color);
@@ -742,10 +921,7 @@ h2 {
   color: var(--font-color);
 }
 
-/* 今日推荐部分 */
-.custom-carousel {
-  padding-bottom: 30px; /* 为指示器留出空间 */
-}
+
 
 :deep(.el-carousel__indicators) {
   bottom: 0px; /* 调整指示器位置 */
@@ -788,4 +964,54 @@ h2 {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.card-header {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+.data-view{
+  font-size: 14px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  background: var(--navbar-bg);
+  color: var(--font-color);
+}
+
+.stat-item:hover {
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+}
+
+.card-header .el-icon {
+  margin-right: 8px;
+  font-size: 20px;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  padding: 10px;
+}
+
+
+.stat-item {
+  background: var(--navbar-bg);
+  color: var(--font-color);
+  padding: 10px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-item label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+:deep(.el-statistic__content){
+  color: var(--font-color);
+}
 </style>

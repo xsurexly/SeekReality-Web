@@ -5,7 +5,7 @@ from config import Config
 from models import db
 from routes.auth import auth_bp
 from routes.profile import profile_bp
-#from routes.detect import detect_bp
+from routes.detect import detect_bp
 from routes.history import detection_history_bp
 from routes.aihelper import aihelper_bp
 from routes.newsget import news_bp
@@ -29,7 +29,7 @@ with app.app_context():
 # 注册蓝图
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(profile_bp, url_prefix='/profile')
-#app.register_blueprint(detect_bp, url_prefix='/api')
+app.register_blueprint(detect_bp, url_prefix='/api')
 app.register_blueprint(detection_history_bp, url_prefix='/history')
 app.register_blueprint(aihelper_bp, url_prefix='/aihelper')
 app.register_blueprint(news_bp, url_prefix='/news')

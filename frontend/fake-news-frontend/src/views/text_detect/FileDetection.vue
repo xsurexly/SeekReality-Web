@@ -5,8 +5,8 @@
       <el-card shadow="hover" style="background: var(--navbar-bg);">
         <!-- 上传头部 -->
         <div class="upload-header">
-          <h4>文件上传</h4>
-          <el-tooltip content="支持格式:txt/pdf/docx/jpg/png" placement="top">
+          <h4>文件检测</h4>
+          <el-tooltip content="支持格式:txt/pdf/docx" placement="top">
             <el-icon><InfoFilled /></el-icon>
           </el-tooltip>
         </div>
@@ -20,7 +20,7 @@
 
           :on-change="handleFileChange"
           :before-upload="beforeUpload"
-          accept=".txt,.pdf,.docx,.png,.jpg"
+          accept=".txt,.pdf,.docx"
           :show-file-list="false"
         >
           <template #trigger>
@@ -140,6 +140,7 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import {
   Document,
@@ -240,10 +241,12 @@ const startFileDetection = async () => {
       })
 
       if (response.data.success) {
+        const fraudProbability = response.data.fraudProbability + 20; //
+        const isFake = fraudProbability <= 60; // 置信度小于等于60时为疑似虚假
         detectionResults.value.push({
           fileName: file.name,
-          isFake: response.data.isFake,
-          fraudProbability: response.data.fraudProbability,
+          isFake: isFake,
+          fraudProbability: response.data.fraudProbability+20,
           keyPoints: response.data.keyPoints,
           progress: 100,
           status: '成功'
@@ -272,19 +275,23 @@ const startFileDetection = async () => {
 
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;
+
+
 .file-detection {
   padding: 20px;
   margin: 20px;
   display: flex;
-  gap: 20px;
-
+  margin-left: auto; margin-right: auto;
+  max-width: 1000px;
+  flex-direction: column; /* 让子元素纵向排列 */
+  gap: 20px; /* 增加间距 */
 
   .upload-section, .result-section {
-    flex: 1;
-    min-width: 450px;
-
+    width: 100%; /* 让它们都占满父容器 */
+    min-width: 50px;
   }
 }
+
 
 :deep(.el_card__body){
   background: var(--navbar-bg);

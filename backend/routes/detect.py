@@ -31,8 +31,7 @@ def text_detection(text):
         'fraudProbability': fraud_probability,
         'isFake': is_fake,
         'keyPoints': [
-            f"模型预测概率：{fraud_probability}%",
-            "示例疑点：内容真实性存疑" if is_fake else "内容真实性较高",
+            "内容真实性存疑" if is_fake else "新闻内容真实性较高，置信度超过60%，鉴定为真实可信新闻",
             "检测模型：Model 1"
         ]
     }

@@ -5,34 +5,6 @@
     <h5 class="sub-title">数据可视化展示了用户最近阅读新闻情况和上传检测新闻的情况</h5>
     <p class="update-time">数据更新时间：{{ currentTime }}</p>
 
-    <!-- 数据概览 -->
-    <el-card class="data-view">
-        <template #header>
-          <div class="card-header">
-            <el-icon><DataAnalysis /></el-icon>
-            <span>实时数据概览</span>
-          </div>
-        </template>
-        <div class="stats-container">
-          <div class="stat-item">
-            <label>今日检测次数</label>
-            <el-statistic :value="stats.todayChecks" />
-          </div>
-          <div class="stat-item">
-            <label>今日阅读量</label>
-            <el-statistic :value="stats.todayReads" />
-          </div>
-          <div class="stat-item">
-            <label>今日阅读时长</label>
-            <el-statistic :value="stats.todayTime" suffix="分钟" />
-          </div>
-          <div class="stat-item">
-            <label>高风险内容</label>
-            <el-statistic :value="stats.riskCount" />
-          </div>
-        </div>
-      </el-card>
-
     <!-- 数据卡片容器 -->
     <div class="data-cards">
       <!-- 阅读时长分布 -->
@@ -79,8 +51,7 @@ import * as echarts from 'echarts'
 import {
   Timer,
   Histogram,
-  PieChart,
-  DataAnalysis
+  PieChart
 } from '@element-plus/icons-vue'
 import OverView from './Overview/OverView.vue'
 
@@ -90,18 +61,11 @@ export default {
     Timer,
     Histogram,
     PieChart,
-    DataAnalysis,
     OverView
   },
   setup() {
     // 响应式数据
     const currentTime = ref(new Date().toLocaleString())
-    const stats = ref({
-      todayChecks: 0,
-      todayReads: 0,
-      todayTime: 0,
-      riskCount: 0
-    })
 
     // 图表引用
     const timeChartRef = ref(null);
@@ -136,12 +100,11 @@ export default {
 
         if (data.success) {
           console.log('Received data:', data.data);
-          updateStats(data.data);
 
           // 等待 DOM 渲染完成
           nextTick(() => {
             console.log("检查 ref:", timeChartRef.value, volumeChartRef.value, detectChartRef.value);
-            
+
             if (!timeChartRef.value || !volumeChartRef.value || !detectChartRef.value) {
               console.error('图表容器未找到，尝试延迟初始化');
               setTimeout(() => initCharts(data.data), 500); // 再等 500ms
@@ -157,16 +120,9 @@ export default {
       }
     };
 
-    const updateStats = (data) => {
-      stats.value.todayChecks = Number(data.todayChecks) || 0;
-      stats.value.todayReads = Number(data.todayReads) || 0;
-      stats.value.todayTime = Number(data.todayTime) || 0;  // 确保是数字
-      stats.value.riskCount = Number(data.riskCount) || 0;
-    };
-
     // 图表初始化
     const initCharts = (data) => {
-      console.log('Chart Data:', data); 
+      console.log('Chart Data:', data);
       nextTick(() => {
         // 销毁旧实例（防止内存泄漏）
         if (timeChart) timeChart.dispose();
@@ -249,7 +205,6 @@ export default {
 
     return {
       currentTime,
-      stats,
       timeChartRef,
       volumeChartRef,
       detectChartRef
@@ -300,6 +255,8 @@ export default {
   font-size: 14px;
   margin-bottom: 20px;
   border-radius: 10px;
+  background: var(--navbar-bg);
+  color: var(--font-color);
 }
 
 .data-view:hover {
@@ -312,6 +269,7 @@ export default {
   gap: 20px;
   min-height: 400px;
   border-radius: 10px;
+  color: var(--font-color);
 }
 
 .card-item {
