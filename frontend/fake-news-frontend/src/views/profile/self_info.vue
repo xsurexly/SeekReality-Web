@@ -141,7 +141,7 @@ const handleSave = async () => {
       gender: user.value.gender
     });
 
-    const response = await fetch('http://localhost:5000/profile/update-profile', {
+    const response = await fetch('/apis/profile/update-profile', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

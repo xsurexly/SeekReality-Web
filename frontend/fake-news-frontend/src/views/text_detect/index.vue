@@ -63,7 +63,7 @@ const completedCount = computed(() => {
 // 文本检测处理
 const handleTextDetection = async () => {
   try {
-    const { data } = await request.post('/api/text-detect', {
+    const { data } = await request.post('/apis/api/text-detect', {
       text: inputText.value
     })
     textResult.value = data

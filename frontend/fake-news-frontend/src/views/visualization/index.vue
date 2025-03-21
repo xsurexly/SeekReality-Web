@@ -79,18 +79,18 @@ export default {
     // 获取用户数据
     const fetchUserData = async () => {
       const username = localStorage.getItem('username');
-      const user_id = localStorage.getItem('userid');
+      const userid = localStorage.getItem('userid');
       console.log('Username:',username)
-      console.log('UserID:', user_id)
+      console.log('UserID:', userid)
 
       // 检查参数完整性
-      if (!username || !user_id) {
+      if (!username || !userid) {
         console.error('缺少用户标识参数');
         return;
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/visualization/get-user-data?user_id=${user_id}&username=${username}`, {
+        const response = await fetch(`/apis/visualization/get-user-data?userid=${userid}&username=${username}`, {
           method: 'GET'
         });
         const text = await response.text();  // 先打印原始内容

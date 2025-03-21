@@ -262,7 +262,7 @@ export default {
     const fetchNews = async () => {
       try {
         loading.value = true;
-        const response = await axios.get('http://localhost:5000/news/get_news', {
+        const response = await axios.get('/apis/news/get_news', {
           params: { username: username }
         });
         news.value = response.data.news;
@@ -297,7 +297,7 @@ export default {
         // 如果没有传入 newsItem，但有 newsId，则从服务器获取新闻详情
         if (!newsItem && (props.newsId || route.query.newsId)) {
           const newsId = props.newsId || route.query.newsId;
-          const response = await axios.get(`http://localhost:5000/news/news/${newsId}`);
+          const response = await axios.get(`/apis/news/news/${newsId}`);
           if (response.data && response.data.news) {
             targetNews = response.data.news;
           } else {
@@ -331,7 +331,7 @@ export default {
         };
 
         // 发送初始阅读记录
-        await axios.post(`http://localhost:5000/readhistory/read_history/${targetNews.id}`, {
+        await axios.post(`/apis/readhistory/read_history/${targetNews.id}`, {
           readHistoryData,
           username: username
         });
@@ -342,7 +342,7 @@ export default {
         }, 1000);
 
         // 获取相关新闻
-        const detailResponse = await axios.get(`http://localhost:5000/news/news/${targetNews.id}`);
+        const detailResponse = await axios.get(`/apis/news/news/${targetNews.id}`);
         if (detailResponse.data.related_news) {
           relatedNews.value = detailResponse.data.related_news;
         }
@@ -364,7 +364,7 @@ export default {
 
       // 记录阅读历史
       if (selectedNews.value) {
-        await axios.post(`http://localhost:5000/readhistory/read_history/${selectedNews.value.id}`, {
+        await axios.post(`/apis/readhistory/read_history/${selectedNews.value.id}`, {
           read_time: readingTime.value,
           is_finished: true,
           username: username
@@ -395,7 +395,7 @@ export default {
          console.log('Updating favorite status for news ID:', selectedNews.value.id);
          console.log('New favorite status:', newFavoriteStatus);
     // 更新新闻表中的 is_favorite
-        await axios.put(`http://localhost:5000/news/update_favorite/${selectedNews.value.id}`, {
+        await axios.put(`/apis/news/update_favorite/${selectedNews.value.id}`, {
           is_favorite: newFavoriteStatus,
           username: username
         });

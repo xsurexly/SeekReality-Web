@@ -27,7 +27,7 @@ module.exports = defineConfig({
     },
     proxy: {
       '/apis': {
-        target: 'http://localhost:5000', // 代理目标地址
+        target: 'http://127.0.0.1:5000', // 代理目标地址
         changeOrigin: true, // 修改请求头中的 Origin
         pathRewrite: { '^/apis': '' }, // 重写路径
       },

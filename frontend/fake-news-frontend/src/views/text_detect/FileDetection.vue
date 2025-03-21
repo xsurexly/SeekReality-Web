@@ -176,7 +176,7 @@ const showFileDetails = async () => {
     formData.append('user_id', localStorage.getItem('userid'))
 
   try {
-    const response = await axios.post('http://localhost:5000/api/file-detect', formData, {
+    const response = await axios.post('/apis/api/file-detect', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
     selectedFileContent.value = response.data.content
@@ -236,7 +236,7 @@ const startFileDetection = async () => {
     formData.append('user_id', localStorage.getItem('userid'))
 
     try {
-      const response = await axios.post('http://localhost:5000/api/file-detect', formData, {
+      const response = await axios.post('/apis/api/file-detect', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 

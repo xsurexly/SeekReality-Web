@@ -3,34 +3,55 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+
 class User(db.Model):
     __tablename__ = 'users'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), nullable=False,unique=True)
+    username = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), nullable=False,unique=True)
+    email = db.Column(db.String(100), nullable=False, unique=True)
     avatar = db.Column(db.String(200), nullable=True)  # 存储头像的路径
-    gender = db.Column(db.String(200),nullable=False)
-    userid = db.Column(db.String(50), nullable=False,unique=True)
+    gender = db.Column(db.String(200), nullable=False)
+    userid = db.Column(db.String(50), nullable=False, unique=True)
     verification_code = db.Column(db.String(6), nullable=True)
-    
+
     def __repr__(self):
         return f"<User {self.username}>"
+
 
 class DetectionHistory(db.Model):
     __tablename__ = 'detection_history'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    user_id = db.Column(db.Integer, nullable=False)
+    userid = db.Column(db.String(50), nullable=False)
     detection_type = db.Column(db.String(50), nullable=False)  # "text" or "file"
-    detection_content = db.Column(db.Text, nullable=True)     # Text content for detection
-    file_path = db.Column(db.String(255), nullable=True)      # File path for uploaded files
-    result = db.Column(db.String(50), nullable=False)         # Detection result
-    detected_at = db.Column(db.DateTime, default=datetime.utcnow)  # Time of detection
-    detection_tool=db.Column(db.String(50),nullable=False) # "ai" or "model1"/model2/model3
+    content = db.Column(db.Text, nullable=True)  # Text content for detection
+    file_path = db.Column(db.String(255), nullable=True)  # File path for uploaded files
+    result = db.Column(db.SmallInteger, nullable=False)  # Detection result (0 for true, 1 for false)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Time of detection
+    detection_tool = db.Column(db.String(50), nullable=False)  # "ai" or "模型"
+    score = db.Column(db.Integer)  # Confidence score
 
-#用于ai助手的对话和检测历史记录
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'id': self.id,
+            'userid': self.userid,
+            'detection_type': self.detection_type,  # "text" or "file"
+            'content': self.content,  # Text content for detection
+            'file_path': self.file_path,  # File path for uploaded files
+            'result': self.result,  # Detection result (0 for true, 1 for false)
+            'created_at': self.created_at.isoformat() if self.created_at else None,  # Time of detection
+            'detection_tool': self.detection_tool,  # "ai" or "模型"
+            'score': self.score,  # Confidence score
+            'detailed_analysis': None,
+            'evidence': None,
+            'summary': None,
+        }
+
+
+# 用于ai助手的对话和检测历史记录
 class Record(db.Model):
     """检测记录表"""
     __tablename__ = 'records'
@@ -65,6 +86,7 @@ class Record(db.Model):
             'created_at': self.created_at.isoformat()
         }
 
+
 class Conversation(db.Model):
     """对话记录表"""
     __tablename__ = 'conversations'
@@ -78,6 +100,7 @@ class Conversation(db.Model):
 
     # 添加反向引用
     records = db.relationship('Record', backref='conversation', lazy=True)
+
 
 class ReadHistory(db.Model):
     """阅读历史记录表"""
@@ -103,7 +126,9 @@ class ReadHistory(db.Model):
             'last_read_at': self.last_read_at,
             'created_at': self.created_at,
         }
-#用于新闻信息的存储和阅读信息的存储
+
+
+# 用于新闻信息的存储和阅读信息的存储
 class Newslist(db.Model):
     __tablename__ = 'news_table'
 
@@ -115,7 +140,8 @@ class Newslist(db.Model):
     picUrl = db.Column(db.String(255), nullable=True)
     url = db.Column(db.String(255), nullable=True)
     fake_score = db.Column(db.Float, default=0.0)  # 虚假度评分 (0-1)
-    category = db.Column(db.String(255), nullable=True)#新闻类型的label
+    category = db.Column(db.String(255), nullable=True)  # 新闻类型的label
+
     def to_dict(self):
         """转换为字典格式"""
         return {
@@ -129,6 +155,7 @@ class Newslist(db.Model):
             'fake_score': self.fake_score,
             'category': self.category,
         }
+
 
 class Newsread(db.Model):
     __tablename__ = 'readnews'

@@ -74,6 +74,7 @@
         <el-skeleton :rows="3" animated />
       </div>
     </el-card>
+
     <!-- 阅读记录列表 -->
     <el-card class="records-card">
       <el-table
@@ -211,7 +212,7 @@ export default {
     const fetchReadHistory = async () => {
       try {
         console.log('开始获取阅读历史记录...');
-        const response = await axios.get(`http://localhost:5000/readhistory/user/${username}`);
+        const response = await axios.get(`/apis/readhistory/user/${username}`);
         console.log('API 响应:', response);
 
         if (response.data && Array.isArray(response.data)) {
@@ -266,7 +267,7 @@ export default {
     //获取统计数据方法
     const fetchReadingStats = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/readhistory/reading_stats/${username}`);
+        const response = await axios.get(`/apis/readhistory/reading_stats/${username}`);
         totalReads.value = response.data.total_reads;
         todayReads.value = response.data.today_reads;
       } catch (error) {
@@ -277,7 +278,7 @@ export default {
     //获取收藏量方法
     const fetchFavoriteCount = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/news/get_favorite_count',
+        const response = await axios.get('/apis/news/get_favorite_count',
           {params:{username:username}});
         console.log(username);
         favoriteCount.value = response.data.favorite_count;
@@ -468,7 +469,7 @@ export default {
         isDataLoaded.value = true;
       }
     }
-    //继续阅读
+    //继续阅读，还没有实现
     const continueReading = (record) => {
       // 跳转到新闻页面并显示指定新闻
       router.push({
@@ -619,20 +620,17 @@ export default {
 
 <style scoped>
 .history-container {
-
   padding: 20px;
   min-height: 100vh;
 }
 
 .header-card {
-  background:var(--navbar-bg);
   margin-bottom: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .header-content {
-  color: var(--font-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -640,7 +638,7 @@ export default {
 
 .header-text h1 {
   font-size: 28px;
-  color: var(--font-color);
+  color: #303133;
   margin-bottom: 8px;
   font-weight: 600;
 }
@@ -672,7 +670,6 @@ export default {
 }
 
 .search-card {
-  background:var(--bg-color);
   margin-bottom: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -685,7 +682,6 @@ export default {
 }
 
 .records-card {
-  background:var(--bg-color);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
@@ -724,7 +720,6 @@ export default {
 }
 
 .pagination {
-  background:var(--bg-color);
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;

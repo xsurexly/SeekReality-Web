@@ -177,7 +177,7 @@ const submitForm = () => {
 // 发送验证码
 const sendVerificationCode = async () => {
   try {
-    const response = await fetch('http://localhost:5000/auth/request-verification-code', {
+    const response = await fetch('/apis/auth/request-verification-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ const confirmPasswordChange = async () => {
       verificationCode: verificationForm.verificationCode
     })
 
-    const response = await fetch('http://localhost:5000/auth/change-password', {
+    const response = await fetch('/apis/auth/change-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

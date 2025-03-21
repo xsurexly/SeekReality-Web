@@ -154,7 +154,7 @@ const sendVerificationCode = async () => {
       return
     }
 
-    const response = await fetch('http://localhost:5000/auth/request-verification-code', {
+    const response = await fetch('/apis/auth/request-verification-code', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -185,7 +185,7 @@ const confirmPasswordChange = async () => {
     // 表单验证
     await formRef.value.validate()
 
-    const response = await fetch('http://localhost:5000/auth/find-password', {
+    const response = await fetch('/apis/auth/find-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

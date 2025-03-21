@@ -1,4 +1,3 @@
-
 from flask import Blueprint, request, jsonify,json
 import os
 from werkzeug.utils import secure_filename
@@ -7,10 +6,18 @@ from datetime import datetime
 import sys
 from docx import Document
 import pdfplumber
+import json
+import logging
+
+
+
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 # 将上级目录添加到系统路径中
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from routes.history import save_detection_history
 from detect_model import predict  # 导入模型预测函数
+from models import db, DetectionHistory, Record, Conversation
 
 detect_bp = Blueprint('detect', __name__)
 
@@ -26,16 +33,49 @@ def text_detection(text):
     # 模型输出为二分类（0: 真实, 1: 伪造）
     is_fake = predicted_class == 1
     fraud_probability = float(probabilities[1] * 100)
-
+    is_fake = 0 if fraud_probability >= 60 else 1
     return {
-        'fraudProbability': fraud_probability,
-        'isFake': is_fake,
-        'keyPoints': [
-            "内容真实性存疑" if is_fake else "新闻内容真实性较高，置信度超过60%，鉴定为真实可信新闻",
-            "检测模型：Model 1"
-        ]
+    'fraudProbability': fraud_probability,
+    'isFake': is_fake,
+    'keyPoints': [
+    "内容真实性存疑" if is_fake else "新闻内容真实性较高，置信度超过60%，鉴定为真实可信新闻",
+    "检测模型：Model 1"
+    ]
     }
 
+
+def save_detection_history(userid, detection_type, content, file_path, detection_result, detection_tool):
+    """保存检测历史记录到 DetectionHistory 表"""
+    try:
+        # 解析检测结果
+        is_fake = detection_result.get('isFake', False)
+        fraud_probability = detection_result.get('fraudProbability', 0.0)
+        fraud_probability =fraud_probability
+        # 将 isFake 转换为 0（true）或 1（false）
+        # result_value = 1 if is_fake else 0
+        result_value =1 if fraud_probability>=60 else 0
+        # 创建检测历史记录
+        history = DetectionHistory(
+            userid=userid,  # 用户 ID
+            detection_type=detection_type,  # 检测类型（"text" 或 "file"）
+            content=content,  # 检测内容（文本内容）
+            file_path=file_path,  # 文件路径（如果是文件检测）
+            result=result_value,  # 检测结果（0 表示 true，1 表示 false）
+            detection_tool=detection_tool,  # 检测工具（"ai" 或 "模型"）
+            score=fraud_probability,  # 置信度
+            created_at=datetime.utcnow()  # 检测时间
+        )
+
+        # 保存记录到数据库
+        db.session.add(history)
+        db.session.commit()
+        logger.info(f'成功保存检测历史记录: {history.id}')
+        return history
+
+    except Exception as e:
+        logger.error(f'保存检测历史记录时发生错误: {str(e)}')
+        db.session.rollback()
+        return None
 
 @detect_bp.route('/text-detect', methods=['POST'])
 def text_detect():
@@ -51,22 +91,15 @@ def text_detect():
     detection_result = text_detection(data.get('text'))
     detection_content = str(data.get('text', ''))  # 确保是字符串类型
 
-    # 保存历史记录
-    # save_detection_history(
-    #     user_id=data['user_id'],
-    #     detection_type='text',
-    #     detection_content=detection_content,
-    #     result=detection_result,
-    #     detect_time=datetime.now().isoformat()
-    # )
-    # 保存历史记录
-    # save_detection_history(
-    #     user_id=  data['user_id'],
-    #     detection_type='text',
-    #     detection_content=detection_content,
-    #     result=json.dumps(detection_result),  # 将字典转换为 JSON 字符串
-    #     detect_time=datetime.now().isoformat()
-    # )
+    #保存历史记录
+    save_detection_history(
+        userid=data.get('user_id'),  # 用户 ID
+        detection_type="text",  # 检测类型为文本
+        content=detection_content,  # 检测内容
+        file_path=None,  # 文件路径（文本检测时为 None）
+        detection_result=detection_result,  # 检测结果
+        detection_tool="模型"  # 检测工具（假设使用 model1）
+    )
 
     return jsonify({
         'success': True,
@@ -122,13 +155,14 @@ def file_detect():
     detection_result = text_detection(content)
 
     # 保存历史记录
-    # save_detection_history(
-    #     user_id=user_id,
-    #     detection_type='file',
-    #     detection_content=filename,  # 存储文件名而不是内容
-    #     result=detection_result['fraudProbability'],
-    #     detect_time=datetime.now().isoformat()
-    # )
+    save_detection_history(
+        userid=user_id,  # 用户 ID
+        detection_type="file",  # 检测类型为文件
+        content=content,  # 检测内容
+        file_path=save_path,  # 文件路径
+        detection_result=detection_result,  # 检测结果
+        detection_tool="model1"  # 检测工具（假设使用 model1）
+    )
 
     return jsonify({
         'content': content,
@@ -142,4 +176,4 @@ def file_detect():
 
 def allowed_file(filename):
     return '.' in filename and \
-        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS 

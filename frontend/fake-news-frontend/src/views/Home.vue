@@ -11,7 +11,7 @@
       </el-avatar>
       <span class="hello-text" style="margin-top:-30px">{{ greeting }}{{ user.username }}，欢迎进入智能虚假新闻检测平台</span>
     </div>
-    
+
     <el-row :gutter="20" style="margin-top: 20px;">
       <el-col :span="15">
         <!-- 数据概览 -->
@@ -33,7 +33,7 @@
           </div>
           <div class="stat-item">
             <label>今日阅读时长</label>
-            <el-statistic :value="stats.todayTime" />
+            <el-statistic :value="stats.todayTime" suffix="秒"/>
           </div>
           <div class="stat-item">
             <label>高风险内容</label>
@@ -143,11 +143,11 @@
                 <span>新闻阅读</span>
               </el-card>
               <el-card class="quick-access-item" @click="$router.push('/read_history')">
-                <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-pinlei" /></el-icon>
+                <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-wenjian" /></el-icon>
                 <span>阅读历史</span>
               </el-card>
               <el-card class="quick-access-item" @click="$router.push('/visualization')">
-                <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-pinlei" /></el-icon>
+                <el-icon style="vertical-align: top;margin-right: 5px;"><svg-icon icon-name="icon-shuju" /></el-icon>
                 <span>数据可视化</span>
               </el-card>
             </div>
@@ -170,8 +170,11 @@
                 v-for="(news, index) in commonFakeNews"
                 :key="index"
                 class="fake-news-card"
-                shadow="hover">
+                shadow="hover"
+                style="position: relative;"
+              >
                 <div class="news-content">{{ news }}</div>
+                <img :src="require('@/assets/image4.png')" class="fake-news-image" >
               </el-card>
             </div>
           </div>
@@ -296,18 +299,18 @@ export default {
 
     const fetchUserData = async () => {
       const username = localStorage.getItem('username');
-      const user_id = localStorage.getItem('userid');
+      const userid = localStorage.getItem('userid');
       console.log('Username:',username)
-      console.log('UserID:', user_id)
+      console.log('UserID:', userid)
 
       // 检查参数完整性
-      if (!username || !user_id) {
+      if (!username || !userid) {
         console.error('缺少用户标识参数');
         return;
       }
 
       try {
-        const response = await fetch(`http://localhost:5000/visualization/get-user-data?user_id=${user_id}&username=${username}`, {
+        const response = await fetch(`/apis/visualization/get-user-data?userid=${userid}&username=${username}`, {
           method: 'GET'
         });
         const text = await response.text();  // 先打印原始内容
@@ -338,28 +341,13 @@ export default {
     const readingStats = ref([]);
 
     // 获取用户信息
-    const getUserInfo = () => {
-      try {
-        const userStr = localStorage.getItem('user');
-        if (!userStr) {
-          return { username: '未登录用户' };
-        }
-        const userInfo = JSON.parse(userStr);
-        return {
-          username: userInfo.username || '未登录用户',
-        };
-      } catch (e) {
-        console.error('解析用户信息失败:', e);
-        return { username: '未登录用户' };
-      }
-    };
-    const userInfo = getUserInfo();
-    const username = userInfo.username;
-
+    
+    const username = localStorage.getItem('username');
+      const userid = localStorage.getItem('userid');
     // 从后端获取阅读统计数据
     const fetchReadingStats = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/readhistory/reading_stats/${username}`);
+        const response = await axios.get(`/apis/readhistory/reading_stats/${username}`);
         console.log('获取的阅读统计数据:', response.data);
 
         // 将后端返回的数据转换为日历组件所需的格式
@@ -435,10 +423,11 @@ export default {
     // 获取最近的检测记录
     const fetchRecentUploads = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/history/detection-records', {
+        console.log(userid)
+        const response = await axios.get('/apis/history/detection-records', {
           params: {
             username: username,
-            limit: 5 // 只获取最近5条记录
+            userid: userid
           }
         });
 
@@ -468,7 +457,7 @@ export default {
     // 获取推荐新闻
     const fetchRecommendedNews = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/news/get_recommended_news');
+        const response = await axios.get('/apis/news/get_recommended_news');
         if (response.data && response.data.recommended) {
           recommendedNews.value = response.data.recommended;
         }
@@ -489,9 +478,9 @@ export default {
 
     // 常见虚假信息
     const commonFakeNews = ref([
-      "虚假新闻1：某知名品牌的产品被召回，实际上并未发生。",
-      "虚假新闻2：某名人去世的消息，实际上是谣言。",
-      "虚假新闻3：某事件的报道被夸大，实际情况并非如此。",
+      "广东医保基金出现赤字？",
+      "AI可以预测彩票中奖号码、提高中奖率？",
+      "首例智能驾驶致死案宣判？",
     ]);
     // 组件挂载时获取数据
     onMounted(() => {
@@ -530,6 +519,27 @@ export default {
 </script>
 
 <style scoped>
+/* fakenews图标 */
+.fake-news-card {
+  position: relative; /* 确保子元素可以绝对定位 */
+}
+
+.fake-news-image {
+  position: absolute; /* 绝对定位 */
+  top: -28px; /* 距离顶部0 */
+  left: 180px; /* 距离左侧0 */
+  width: 25%; /* 宽度100% */
+  height: auto; /* 高度自适应 */
+  z-index: 1; /* 确保图片在文本上方 */
+  opacity: 0.8; /* 可选：设置透明度 */
+}
+
+.news-content {
+  position: relative; /* 确保文本在图片之上 */
+  z-index: 2; /* 确保文本在图片之上 */
+  color:var(--font-color); /* 可选：设置文本颜色以提高可读性 */
+}
+
 .home-container {
   text-align: center;
   background-color: var(--bg-color);

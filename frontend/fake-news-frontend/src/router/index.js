@@ -10,6 +10,7 @@ import Newspage from '../views/news_page/index.vue'
 import Password_modify from '@/views/password_modify.vue';
 import History from '../views/detect_history/index.vue';
 import ReadHistory from '../views/read_history/index.vue';
+import HomePage from '@/views/HomePage.vue';
 
 
 
@@ -17,7 +18,7 @@ const routes = [
   {
     path: '/',
     name: 'start',
-    component: Login,
+    component: HomePage,
     meta: {
       keepAlive: false
       }

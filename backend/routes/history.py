@@ -1,3 +1,5 @@
+import json
+
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 import logging
@@ -8,6 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 detection_history_bp = Blueprint('detection_history', __name__)
+
 
 def save_detection_record(conversation_id, username, content, detection_mode, assistant_message):
     """保存检测记录"""
@@ -31,16 +34,17 @@ def save_detection_record(conversation_id, username, content, detection_mode, as
             evidence=analysis_data.get('evidence', ''),
             summary=analysis_data.get('summary', '')
         )
-        
+
         db.session.add(record)
         db.session.commit()
         logger.info(f'成功保存检测记录: {record.id}')
         return record
-        
+
     except Exception as e:
         logger.error(f'保存检测记录时发生错误: {str(e)}')
         db.session.rollback()
         return None
+
 
 def parse_ai_response(response):
     """解析AI响应，提取结构化数据"""
@@ -49,19 +53,19 @@ def parse_ai_response(response):
         # 提取真实性评分
         score_match = re.search(r'真实性评分：(\d+)', response)
         score = int(score_match.group(1)) if score_match else 0
-        
+
         # 提取详细分析
         analysis_match = re.search(r'详细分析：(.*?)(?=相关事实依据：)', response, re.DOTALL)
         detailed_analysis = analysis_match.group(1).strip() if analysis_match else ''
-        
+
         # 提取相关事实依据
         evidence_match = re.search(r'相关事实依据：(.*?)(?=总结：)', response, re.DOTALL)
         evidence = evidence_match.group(1).strip() if evidence_match else ''
-        
+
         # 提取总结
         summary_match = re.search(r'总结：(.*?)$', response, re.DOTALL)
         summary = summary_match.group(1).strip() if summary_match else ''
-        
+
         return {
             'score': score,
             'result': score >= 60,  # 大于等于60分判定为真实
@@ -74,26 +78,41 @@ def parse_ai_response(response):
         logger.error(f"解析AI响应失败: {str(e)}")
         return None
 
+
 @detection_history_bp.route('/detection-records', methods=['GET'])
 def get_detection_records():
-    """获取用户的AI检测记录"""
+    """获取用户的检测记录"""
     try:
         username = request.args.get('username')
+        userid = request.args.get('user_id') or request.args.get('userid')
         mode = request.args.get('mode', 'analysis')
 
         if not username:
             return jsonify({'error': '用户名不能为空'}), 400
 
-        # 查询记录
-        records = Record.query.filter_by(
+        if not userid:
+            return jsonify({'error': '用户名不能为空'}), 400
+
+        history = []
+
+        # 查询 AI 检测记录
+        ai_records = Record.query.filter_by(
             username=username,
             detection_mode=mode
         ).order_by(Record.created_at.desc()).all()
 
-        # 格式化返回数据
-        history = [record.to_dict() for record in records]
-        return jsonify({'history': history})
+        for record in ai_records:
+            history.append(record.to_dict())
 
+        # 查询检测历史记录
+        detection_histories = DetectionHistory.query.filter_by(
+            userid=userid
+        ).order_by(DetectionHistory.created_at.desc()).all()
+
+        for d_record in detection_histories:
+            history.append(d_record.to_dict())
+
+        return jsonify({'history': history})
     except Exception as e:
         logger.error(f'获取检测记录失败: {str(e)}')
         return jsonify({'error': '获取检测记录失败'}), 500
@@ -117,7 +136,7 @@ def delete_detection_record(record_id):
         # 删除记录
         db.session.delete(record)
         db.session.commit()
-        
+
         logger.info(f'成功删除记录 ID: {record_id}')
         return jsonify({'message': '记录已成功删除'}), 200
 
@@ -126,18 +145,6 @@ def delete_detection_record(record_id):
         db.session.rollback()
         return jsonify({'error': '删除记录失败'}), 500
 
-# 保存检测历史
-def save_detection_history(user_id, detection_type, detection_content=None, file_path=None, result="", detect_time=None):
-    history = DetectionHistory(
-        user_id=user_id,
-        detection_type=detection_type,
-        detection_content=detection_content,
-        file_path=file_path,
-        result=result,
-        detected_at=detect_time
-    )
-    db.session.add(history)
-    db.session.commit()
 
 # 查询检测历史
 @detection_history_bp.route('/old-history', methods=['GET'])
@@ -160,4 +167,4 @@ def get_old_history():
         } for h in histories
     ]
 
-    return jsonify({'success': True, 'history': result})
+    return jsonify({'success': True, 'history': result}) 

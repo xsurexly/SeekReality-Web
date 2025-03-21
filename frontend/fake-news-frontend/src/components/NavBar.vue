@@ -169,7 +169,7 @@ const avatarUrl = computed(() => {
     return avatar.value
   }
 
-  return `http://localhost:5000${avatar.value}`
+  return `/apis${avatar.value}`
 })
 
 // 在组件挂载时更新用户信息

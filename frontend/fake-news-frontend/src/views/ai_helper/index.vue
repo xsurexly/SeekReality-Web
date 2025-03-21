@@ -306,7 +306,7 @@ export default {
       try {
         messages.value.push({ user: currentMessage, assistant: '正在思考中...' });
 
-        const response = await fetch('http://localhost:5000/aihelper/talk', {
+        const response = await fetch('/apis/aihelper/talk', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -364,7 +364,7 @@ export default {
 
         messages.value.push({ user: `文件：${file.name}`, assistant: '正在分析中...' });
 
-        const response = await fetch('http://localhost:5000/aihelper/upload', {
+        const response = await fetch('/apis/aihelper/upload', {
           method: 'POST',
           body: formData,
         });

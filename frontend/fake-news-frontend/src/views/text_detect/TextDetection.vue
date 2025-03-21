@@ -68,7 +68,10 @@
               <el-tag
                 v-for="(word, index) in detectionResult.keyPoints"
                 :key="index"
-                type="success"
+                    :style="{
+      backgroundColor: detectionResult.isFake ? '#f56c6c' : '#67c23a',
+      color: 'white' // 文字颜色
+    }"
                 effect="dark"
                 class="keyword-tag"
               >
@@ -125,27 +128,29 @@ const startTextDetection = async () => {
   try {
     isDetecting.value = true
     detectionResult.value = null
-    const userInfo = JSON.parse(localStorage.getItem('user'))
-    if (!userInfo || !userInfo.username) {
-      ElMessage.error('请先登录')
-      return
-    }
+
+    const username = localStorage.getItem('username');
+    const user_id = localStorage.getItem('userid');
+    console.log('Username:',username)
+    console.log('UserID:', user_id)
+
     // 调用后端 API
-    const response = await axios.post('http://localhost:5000/api/text-detect', {
+    const response = await axios.post('/apis/api/text-detect', {
       text: inputText.value,
-      user_id: localStorage.getItem('userid') // 从用户登录信息中获取
+      user_id: user_id // 从用户登录信息中获取
     })
 
-
     // 更新检测结果
-    detectionResult.value = {
-      isFake: response.data.detectionResult.isFake,
-      fraudProbability: response.data.detectionResult.fraudProbability+38,
-      keyPoints: response.data.detectionResult.keyPoints,
-      analysis: '语言客观、中立，无明显情绪化或煽动性语言。信息逻辑清晰，无明显矛盾或漏洞。'
-    }
+detectionResult.value = {
+  isFake: response.data.detectionResult.isFake,
+  fraudProbability: response.data.detectionResult.fraudProbability + 38,
+  keyPoints: response.data.detectionResult.keyPoints,
+  analysis: response.data.detectionResult.isFake === 1
+    ? "检测到内容中存在虚假信息，可能存在误导性陈述或夸大事实的情况。"
+    : "语言客观、中立，无明显情绪化或煽动性语言。信息逻辑清晰，无明显矛盾或漏洞。"
+};
 
-    ElMessage.success('检测完成')
+    ElMessage.success('检测完成，记录已保存')
   } catch (error) {
     ElMessage.error('检测失败: ' + error.message)
     detectionResult.value = {
@@ -153,7 +158,6 @@ const startTextDetection = async () => {
       fraudProbability: 0,
       analysis: '检测过程中发生错误'
     }
-
   } finally {
     isDetecting.value = false
   }
@@ -176,7 +180,6 @@ const startTextDetection = async () => {
     color: var(--font-color);
   }
 }
-
 
 
 .text-card {

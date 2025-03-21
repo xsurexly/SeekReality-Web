@@ -140,7 +140,7 @@
           <template #default="scope">
             <el-progress
               :percentage="scope.row.score"
-              :color="getConfidenceColor(scope.row.confidence)"
+              :color="getConfidenceColor(scope.row.score/100)"
               :format="(percentage) => percentage + '%'"
             />
           </template>
@@ -298,9 +298,10 @@ export default {
           return
         }
 
-        const response = await axios.get(`http://localhost:5000/history/detection-records`, {
+        const response = await axios.get(`/apis/history/detection-records`, {
           params: {
             username: userInfo.username,
+            userid:userInfo.userid
           }
         })
 
@@ -329,7 +330,7 @@ export default {
     // 删除记录
     const deleteRecord = async (record) => {
       try {
-        const response = await axios.delete(`http://localhost:5000/history/detection-records/${record.id}`)
+        const response = await axios.delete(`/apis/history/detection-records/${record.id}`)
         if (response.status === 200) {
           ElMessage.success('记录已删除')
           // 从本地数据中移除该记录
