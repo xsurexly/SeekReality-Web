@@ -9,7 +9,7 @@
         <div class="avatar-card">
           <el-upload
             class="avatar-uploader"
-            :action="`http://localhost:5000/profile/upload-avatar`"
+            :action="`apis/profile/upload-avatar`"
             :headers="uploadHeaders"
             :data="uploadData"
             :show-file-list="false"
@@ -340,5 +340,40 @@ const beforeAvatarUpload = (file) => {
 :deep(.el-form-item__label) {
   color:var(--font-color);
   margin-top:10px ;
+}
+
+@media (max-width: 768px) {
+  .info-content {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .avatar-section {
+    border-right: none;
+    border-bottom: 1px solid #eeeeee;
+    margin-bottom: 20px;
+    width: 100%;
+  }
+
+  .form-section {
+    padding: 0;
+    width: 100%;
+
+    .el-form {
+      width: 90%; // 更适合小屏幕
+    }
+  }
+
+  .upload-button {
+    top: 20px;
+    right: 20px;
+    transform: translate(50%, -50%);
+    margin: 10px;
+  }
+
+  :deep(.el-button+.el-button){
+    margin-left: 0;
+    margin-top: 5px;
+  }
 }
 </style>

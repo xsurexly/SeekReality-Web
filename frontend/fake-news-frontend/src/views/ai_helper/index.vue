@@ -916,13 +916,28 @@ textarea:focus {
 
 /* 响应式调整 */
 @media (max-width: 768px) {
+  .ai-icon{
+    top: 10px;
+    right: 20px;
+  }
+
   .ai-popup {
     width: 100% !important;
-    height: 100% !important;
+    height: 90% !important;
     right: 0;
-    left: 0;
-    border-radius: 0; /* 去掉圆角 */
+    bottom: 90px;
   }
+
+  .ai-popup-header {
+  padding: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 600;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
 
   .chat-container {
     padding: 16px;
@@ -939,14 +954,16 @@ textarea:focus {
   .input-section {
     flex-direction: column;
     gap: 10px;
+
   }
 
   textarea {
-    width: 100%;
+    width: 90%;
   }
 
   .upload-button {
     width: 100%;
+    
   }
 }
 
@@ -980,9 +997,10 @@ textarea:focus {
   border: none;
   cursor: pointer;
   display: flex;
-  align-items: center;
+  align-items: right;
   gap: 8px;
   transition: all 0.3s ease;
+
 }
 
 .send-button:hover:not(:disabled) {
@@ -1226,6 +1244,10 @@ textarea:focus {
   font-size: 14px;
   font-color: var(--font-color);;
   margin-bottom: 15px;
+}
+
+.resizer{
+  visibility: hidden;
 }
 
 </style>

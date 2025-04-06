@@ -220,7 +220,7 @@ const confirmPasswordChange = async () => {
   margin: 0 auto;
   margin-top: 80px;
   padding: 60px;
-  background-color: var(--container-bg);
+  background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   border: 1px solid #b5b5b5;

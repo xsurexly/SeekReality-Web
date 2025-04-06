@@ -1,17 +1,16 @@
 <template>
-  <div class="navbar-container">
+  <div class="navbar-container" :class="{ 'mobile': isMobile }">
     <el-menu
       :default-active="activeMenu"
-      class="el-menu-vertical"
-      :collapse="isNavbarCollapsed"
+      :class="['el-menu-vertical', { 'mobile': isMobile }]"
+      :collapse="isMobile ? false : isNavbarCollapsed"
       :collapse-transition="true"
       text-color="var(--text-primary)"
       active-text-color="var(--el-color-primary)"
-      background-color= "var(--navbar-bg)"
-
+      background-color="var(--navbar-bg)"
     >
-      <!-- Logo 区域 -->
-      <router-link to="/home">
+      <!-- Logo 区域 - 仅在桌面端显示 -->
+      <router-link to="/home" v-if="!isMobile">
         <div class="logo-container">
           <img
             :class="{ 'collapsed-logo': isNavbarCollapsed }"
@@ -21,8 +20,8 @@
         </div>
       </router-link>
 
-      <!-- 折叠按钮 -->
-      <div class="hamburger-container">
+      <!-- 折叠按钮 - 仅在桌面端显示 -->
+      <div class="hamburger-container" v-if="!isMobile">
         <el-icon
           :size="24"
           class="collapse-icon"
@@ -33,8 +32,26 @@
         </el-icon>
       </div>
 
-      <!-- 导航菜单 -->
-      <el-menu-item index="/home" @click="navigateTo('/home')">
+      <!-- 移动端底部导航菜单 -->
+      <template v-if="isMobile">
+        <div class="mobile-menu">
+          <div class="nav-item" 
+               v-for="item in mobileMenuItems" 
+               :key="item.path"
+               :class="{ 'active': activeMenu === item.path }"
+               @click="navigateTo(item.path)"
+          >
+            <div class="icon-circle">
+              <el-icon><svg-icon :icon-name="item.icon" /></el-icon>
+            </div>
+            <span class="nav-label">{{ item.label }}</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- 桌面端导航菜单 -->
+      <template v-else>
+        <el-menu-item index="/home" @click="navigateTo('/home')">
         <el-icon><svg-icon icon-name="icon-shouye" /></el-icon>
         <template #title>
           <span>首页</span>
@@ -87,42 +104,44 @@
           <span>退出登录</span>
         </template>
       </el-menu-item>
+      </template>
 
-      <!-- 用户信息区域 -->
-      <div class="user-info">
-        <el-dropdown trigger="click" @visible-change="handleDropdownVisible">
-          <div class="user-content">
-            <el-avatar
-              :size="45"
-              :src="avatarUrl"
-              style="margin-left: 10px;margin-right: 10px;"
-              class="custom-avatar"
-            >
-              <img src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png" />
-            </el-avatar>
-            <span v-show="!isNavbarCollapsed" class="username">{{ user.username }}</span>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="goToProfile">
-                <el-icon><svg-icon icon-name="icon-wode" /></el-icon>
-                个人主页
-              </el-dropdown-item>
-              <el-dropdown-item @click="goToAboutUs">
-                <el-icon><svg-icon icon-name="icon-guanyuwomen" /></el-icon>
-                关于我们
-              </el-dropdown-item>
-              <el-dropdown-item divided @click="logout">
-                <el-icon><svg-icon icon-name="icon-tuichu" /></el-icon>
-                退出登录
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-      </div>
+      <!-- 用户信息区域 - 仅在桌面端显示 -->
+      <div class="user-info" v-if="!isMobile">
+          <el-dropdown trigger="click" @visible-change="handleDropdownVisible">
+            <div class="user-content">
+              <el-avatar
+                :size="45"
+                :src="avatarUrl"
+                style="margin-left: 10px;margin-right: 10px;"
+                class="custom-avatar"
+              >
+                <img src="https://cube.elemecdn.com/e/5c/e3a01e0ff18b42925b7a830931fb8png.png" />
+              </el-avatar>
+              <span v-show="!isNavbarCollapsed" class="username">{{ user.username }}</span>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="goToProfile">
+                  <el-icon><svg-icon icon-name="icon-wode" /></el-icon>
+                  个人主页
+                </el-dropdown-item>
+                <el-dropdown-item @click="goToAboutUs">
+                  <el-icon><svg-icon icon-name="icon-guanyuwomen" /></el-icon>
+                  关于我们
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="logout">
+                  <el-icon><svg-icon icon-name="icon-tuichu" /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
     </el-menu>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
@@ -135,6 +154,19 @@ const { isNavbarCollapsed } = defineProps({
     required: true
   }
 })
+
+const isMobile = ref(false)
+const checkMobile = () => {
+  isMobile.value = window.innerWidth <= 768
+}
+
+const mobileMenuItems = [
+  { path: '/home', label: '首页', icon: 'icon-shouye' },
+  { path: '/textdetect', label: '检测', icon: 'icon-jilu' },
+  { path: '/newspage', label: '阅读', icon: 'icon-pinlei' },
+  { path: '/visualization', label: '统计', icon: 'icon-shuju' },
+  { path: '/profile', label: '我的', icon: 'icon-wode' }
+]
 
 const emit = defineEmits(['toggle-menu'])
 
@@ -177,6 +209,8 @@ onMounted(() => {
   const userData = getStoredUser()
   user.value = userData
   avatar.value = localStorage.getItem('avatar') || ''
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
 })
 
 // 导航跳转
@@ -209,7 +243,7 @@ const logout = () => {
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;
 
-  .logo-container {
+.logo-container {
     img {
       width: 160px;
       transition: all 0.3s;
@@ -221,9 +255,9 @@ const logout = () => {
         object-position: 0 100%;
       }
     }
-  }
+ }
 
-  .hamburger-container {
+.hamburger-container {
     padding: 10px;
     text-align: center;
 
@@ -236,7 +270,7 @@ const logout = () => {
         color: #409EFF;
       }
     }
-  }
+}
 
 
   .custom-avatar {
@@ -266,6 +300,19 @@ const logout = () => {
   background-color: var(--navbar-bg);
   color: var(--text-primary);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  &.mobile {
+    height: 80px;
+    position: fixed;
+    
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: var(--navbar-bg);
+    padding: 5px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    width: 100vw !important;
+  }
 }
 
 
@@ -278,6 +325,18 @@ const logout = () => {
   &:not(.el-menu--collapse) {
     width: 200px;
   }
+
+  &.mobile {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    border: none;
+    height: 70px;
+    width: 100% !important;
+    max-width: none;
+    min-height: 70px;
+  }
+
 
   .logo-container {
     padding: 10px 0;
@@ -311,9 +370,83 @@ const logout = () => {
 
 :deep(.el-dropdown-menu__item) {
   color: var(--text-primary);
-  
+
   &:hover {
     background-color: var(--hover-nav) !important;
+  }
+}
+
+.mobile-menu {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  width: 100% !important;
+  min-width: 100%;
+  height: 100%;
+  padding: 0 2px;;
+  justify-content: space-evenly;
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1 0 18%;
+    max-width: none !important;
+    min-width: 0;
+    padding: 8px 0; 
+    margin: 0 2px;
+    position: relative;
+    margin-bottom: 0;
+    cursor: pointer;
+
+    .icon-circle {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background-color: var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0; // 移除底部间距
+      transition: all 0.2s ease;
+
+      .el-icon {
+        font-size: 24px;
+      }
+    }
+
+    .nav-label {
+      font-size: 12px;
+      color: var(--font-color);
+      transform: scale(0.9);
+    }
+
+    &.active {
+      .nav-label {
+        color: var(--el-color-primary);
+      }
+    }
+  }
+}
+
+.nav-item {
+  &.active {
+    // 添加底部指示条
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 30px;
+      height: 2px;
+      background: var(--el-color-primary);
+      border-radius: 1px;
+    }
+
+    .icon-circle {
+      transform:translateY(-10px) scale(1.3);
+    }
   }
 }
 </style>

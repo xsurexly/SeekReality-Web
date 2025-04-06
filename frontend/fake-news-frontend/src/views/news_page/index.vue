@@ -151,11 +151,7 @@
               class="article-image"
               fit="cover"
             />
-
-            <div v-if="selectedNews.content" class="article-content">
-              <p v-for="(paragraph, index) in formatContent(selectedNews.content)" :key="index">
-                {{ paragraph }}
-              </p>
+            <div v-if="selectedNews.content" class="article-content" v-html="formatContent(selectedNews.content)">
             </div>
             <div v-else class="loading-content">
               <el-skeleton :rows="10" animated />
@@ -428,8 +424,8 @@ export default {
 
     // 格式化内容
     const formatContent = (content) => {
-      if (!content) return [];
-      return content.split('\\n').filter(p => p.trim());
+      if (!content) return '';
+      return content.split('\\n').filter(p => p.trim()).join('<br>');
     };
 
     // 格式化检测分数
@@ -602,7 +598,7 @@ export default {
 .news-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 0px;
   min-height: 100vh;
 }
 .search-card {
@@ -854,6 +850,41 @@ export default {
 
   .news-dialog {
     width: 95% !important;
+  }
+
+  .search-card .el-row {
+    flex-wrap: wrap !important;
+  }
+
+  .search-card .el-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 12px;
+    display: flex !important;
+    justify-content: flex-end;
+  }
+
+  .search-card .el-col:last-child {
+    margin-bottom: 0;
+  }
+
+  :deep(.el-pagination) {
+    --el-pagination-button-width: 28px;
+    --el-pagination-button-height: 28px;
+    
+    .btn-prev,
+    .btn-next,
+    .el-pager li {
+      min-width: 28px;
+      height: 28px;
+      margin: 0 2px;
+    }
+    
+    .el-pagination__total,
+    .el-pagination__sizes,
+    .el-pagination__jump {
+      display: none;
+    }
   }
 }
 

@@ -2,13 +2,19 @@
   <div class="common-layout" id="app">
     <el-container class="main-container">
       <el-container>
-        <!-- 左侧导航栏，动态宽度 -->
-        <el-aside :style="{ width: isNavbarCollapsed ? '75px' : '200px' }" v-if="$route.meta.keepAlive">
+        <!-- 桌面端侧边导航栏 -->
+        <el-aside 
+          v-if="!isMobile && $route.meta.keepAlive" 
+          :style="{ width: isNavbarCollapsed ? '75px' : '200px' }"
+        >
           <Navbar @toggle-menu="toggleNavbar" :isNavbarCollapsed="isNavbarCollapsed" />
         </el-aside>
 
-        <!-- 右侧内容区 -->
-        <el-main :class="{ 'isNavbarCollapsed': isNavbarCollapsed }">
+        <!-- 主要内容区 -->
+        <el-main :class="{ 
+          'isNavbarCollapsed': isNavbarCollapsed,
+          'has-bottom-navbar': isMobile 
+        }">
           <div class="content">
             <router-view />
           </div>
@@ -16,14 +22,21 @@
             <AIhelper></AIhelper>
           </div>
         </el-main>
+
+        <!-- 移动端底部导航栏 -->
+        <div v-if="isMobile && $route.meta.keepAlive" class="mobile-navbar">
+          <Navbar @toggle-menu="toggleNavbar" :isNavbarCollapsed="isNavbarCollapsed" />
+        </div>
       </el-container>
     </el-container>
   </div>
 </template>
 
+
 <script>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import Navbar from '@/components/NavBar.vue'
-import AIhelper from'./views/ai_helper/index.vue'
+import AIhelper from './views/ai_helper/index.vue'
 
 export default {
   name: 'App',
@@ -31,32 +44,32 @@ export default {
     Navbar,
     AIhelper
   },
-  data() {
+  setup() {
+    const isNavbarCollapsed = ref(false)
+    const isMobile = ref(false)
+
+    const checkMobile = () => {
+      isMobile.value = window.innerWidth <= 768
+    }
+
+    const toggleNavbar = () => {
+      isNavbarCollapsed.value = !isNavbarCollapsed.value
+    }
+
+    onMounted(() => {
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
+    })
+
+    onBeforeUnmount(() => {
+      window.removeEventListener('resize', checkMobile)
+    })
+
     return {
-      isNavbarCollapsed: false,
-    };
-  },
-  methods: {
-    // 切换导航栏收起状态
-    toggleNavbar() {
-      this.isNavbarCollapsed = !this.isNavbarCollapsed;
-    },
-
-  }
-};
-
-window.ResizeObserver = class ResizeObserver extends window.ResizeObserver {
-  constructor(callback) {
-    let timer = null;
-    const debouncedCallback = function () {
-      let context = this;
-      let args = arguments;
-      clearTimeout(timer);
-      timer = setTimeout(function () {
-        callback.apply(context, args);
-      }, 16);
-    };
-    super(debouncedCallback);
+      isNavbarCollapsed,
+      isMobile,
+      toggleNavbar
+    }
   }
 }
 </script>
@@ -105,5 +118,21 @@ window.ResizeObserver = class ResizeObserver extends window.ResizeObserver {
 .aihelper{
   z-index: 999;
 }
+
+.mobile-navbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.el-main {
+  &.has-bottom-navbar {
+    padding-bottom: 90px; // 为底部导航栏留出空间
+  }
+}
+
+
 
 </style>

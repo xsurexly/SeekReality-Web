@@ -271,8 +271,6 @@ const startFileDetection = async () => {
 </script>
 
 
-
-
 <style scoped lang="scss">
 @use "@/assets/styles/_themes.scss" as *;
 
@@ -450,11 +448,27 @@ pre {
 @media (max-width: 768px) {
   .file-detection {
     flex-direction: column;
+    padding: 0px;
+    margin: 0px;
     height: auto;
 
     .upload-section, .result-section {
       min-width: unset;
     }
   }
+
+  .file-detection {
+  
+  display: flex;
+  margin-left: auto; margin-right: auto;
+  max-width: 1000px;
+  flex-direction: column; /* 让子元素纵向排列 */
+  gap: 20px; /* 增加间距 */
+
+  .upload-section, .result-section {
+    width: 100%; /* 让它们都占满父容器 */
+    min-width: 50px;
+  }
+}
 }
 </style>
