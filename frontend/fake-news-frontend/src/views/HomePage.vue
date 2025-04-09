@@ -3,7 +3,7 @@
     <!-- 头部 -->
     <div class="header">
       <h1>星眸查讯</h1>
-      <h2>智能虚假新闻分析平台 这是星眸查讯的第一个完整版本</h2>
+      <h2>智能新闻虚假检测平台</h2>
       <p>
         星眸查讯是一个创新的虚假新闻检测平台，旨在通过先进的深度学习技术，提供精确的虚假新闻检测和分析，同时给用户提供新闻阅读功能。
       </p>
@@ -73,15 +73,16 @@ export default {
 </script>
 
 <style scoped>
+
 .home {
   font-family: 'Arial', sans-serif;
+  background: linear-gradient(to bottom right, white, rgba(183, 217, 253, 0.666));
 }
 
 /* 头部样式 */
 .header {
   text-align: center;
   padding: 10px 20px;
-  background-image:url("image.png");
   background-size: contain;
   background-position: right;
   background-repeat: no-repeat;
@@ -142,6 +143,7 @@ export default {
   margin-top: 20px;
   padding: 10px 20px;
   text-align: center;
+
 }
 
 .features h2 {
@@ -158,7 +160,7 @@ export default {
 
 .feature-item {
   padding: 20px;
-  background: white;
+  background: linear-gradient(to bottom left, white, rgba(223, 238, 255, 0.666));
   border-radius: 12px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease;
@@ -183,13 +185,11 @@ export default {
 /* 底部样式 */
 .footer {
   text-align: center;
-
-  background: var(--bg-color);
   border-radius: 12px;
 }
 
 .footer p {
   font-size: 14px;
-  color: #666;
+  color: black;
 }
 </style>

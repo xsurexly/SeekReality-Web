@@ -341,7 +341,7 @@ export default {
     const readingStats = ref([]);
 
     // 获取用户信息
-    
+
     const username = localStorage.getItem('username');
       const userid = localStorage.getItem('userid');
     // 从后端获取阅读统计数据
@@ -783,7 +783,9 @@ export default {
     span: 24;
   }
 }
-
+.hello-text{
+  font-size: 16px;
+}
 /* 阅读容器样式 */
 .reading-container {
   margin-top: auto;
@@ -1024,4 +1026,46 @@ h2 {
 :deep(.el-statistic__content){
   color: var(--font-color);
 }
+
+@media screen and (max-width: 768px) {
+  /* 强制栅格系统转为单列 */
+
+  .el-row {
+    display: block !important;
+
+    .el-col {
+      width: 96% !important;
+      max-width: 96% !important;
+      display: block !important;
+
+      /* 移除所有栅格间隔 */
+      &[class*="el-col-"] {
+        margin-left: 10px !important;
+        margin-right: 10px !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+    }
+  }
+
+  /* 强制所有卡片占满宽度 */
+  .dashboard-item {
+    width: 96% !important;
+    max-width: 96% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* 调整主内容顺序 */
+  .el-col:first-child {
+    order: 1;
+  }
+
+  .el-col:last-child {
+    order: 2;
+    margin-top: 20px !important;
+  }
+}
+
+
 </style>

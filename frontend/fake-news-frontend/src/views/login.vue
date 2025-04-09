@@ -169,9 +169,9 @@ input[type="submit"]:active {
 }
 
 /* 响应式支持 */
-@media (max-width: 400px) {
+@media (max-width: 300px) {
   .login-container {
-    width: 90%;
+    width: 60%;
     padding: 20px;
   }
 

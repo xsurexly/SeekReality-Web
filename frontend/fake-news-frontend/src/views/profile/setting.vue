@@ -216,4 +216,21 @@ onMounted(() => {
 .el-button:hover {
   background-color: #489dff9b;
 }
+
+@media (max-width: 768px) {
+  .theme-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .theme-button {
+    width: 100%;
+  }
+  :deep(.el-button+.el-button){
+    margin-left: 0;
+    margin-top: 5px;
+  }
+}
+
 </style>

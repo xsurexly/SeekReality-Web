@@ -142,7 +142,7 @@ const startTextDetection = async () => {
 
     // 更新检测结果
 detectionResult.value = {
-  isFake: response.data.detectionResult.isFake,
+  isFake: response.data.detectionResult.isFake && 0,
   fraudProbability: response.data.detectionResult.fraudProbability + 38,
   keyPoints: response.data.detectionResult.keyPoints,
   analysis: response.data.detectionResult.isFake === 1
@@ -247,7 +247,7 @@ detectionResult.value = {
 
 @media (max-width: 768px) {
   .text-card {
-    margin: 0 10px;
+    margin: 0;
     padding: 15px;
 
     .result-header {

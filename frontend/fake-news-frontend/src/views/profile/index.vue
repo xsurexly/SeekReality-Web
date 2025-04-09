@@ -80,4 +80,14 @@ export default {
 :deep(.el-tabs__item){
   color: var(--font-color);
 }
+
+@media (max-width: 768px){
+  .tab-container {
+  background-color: var(--card-bg);
+  padding: 40px 10px;
+  border-radius: 10px;
+  box-shadow: var(--shadow-color);
+  min-height: 250px;
+}
+}
 </style>
