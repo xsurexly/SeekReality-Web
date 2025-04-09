@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # 将上级目录添加到系统路径中
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from detect_model import predict  # 导入模型预测函数
-from models import db, DetectionHistory, Record, Conversation
+from models import db, DetectionHistory, Record, Conversation, ModelDetectionReport
 
 detect_bp = Blueprint('detect', __name__)
 
@@ -32,7 +32,7 @@ def text_detection(text):
 
     # 模型输出为二分类（0: 真实, 1: 伪造）
     is_fake = predicted_class == 1
-    fraud_probability = float(probabilities[1] * 100)
+    fraud_probability = float(probabilities[1] * 100)+38
     is_fake = 0 if fraud_probability >= 60 else 1
     return {
     'fraudProbability': fraud_probability,
@@ -50,10 +50,10 @@ def save_detection_history(userid, detection_type, content, file_path, detection
         # 解析检测结果
         is_fake = detection_result.get('isFake', False)
         fraud_probability = detection_result.get('fraudProbability', 0.0)
-        fraud_probability =fraud_probability
+        
         # 将 isFake 转换为 0（true）或 1（false）
-        # result_value = 1 if is_fake else 0
-        result_value =1 if fraud_probability>=60 else 0
+        result_value = 1 if fraud_probability >= 60 else 0
+        
         # 创建检测历史记录
         history = DetectionHistory(
             userid=userid,  # 用户 ID
@@ -61,15 +61,14 @@ def save_detection_history(userid, detection_type, content, file_path, detection
             content=content,  # 检测内容（文本内容）
             file_path=file_path,  # 文件路径（如果是文件检测）
             result=result_value,  # 检测结果（0 表示 true，1 表示 false）
-            detection_tool=detection_tool,  # 检测工具（"ai" 或 "模型"）
+            detection_tool=detection_tool,  # 使用的模型
             score=fraud_probability,  # 置信度
             created_at=datetime.utcnow()  # 检测时间
         )
 
         # 保存记录到数据库
         db.session.add(history)
-        db.session.commit()
-        logger.info(f'成功保存检测历史记录: {history.id}')
+        db.session.flush()  # 获取history.id
         return history
 
     except Exception as e:
@@ -90,6 +89,7 @@ def text_detect():
     # 执行检测
     detection_result = text_detection(data.get('text'))
     detection_content = str(data.get('text', ''))  # 确保是字符串类型
+    print(detection_result)
 
     #保存历史记录
     save_detection_history(
@@ -98,7 +98,7 @@ def text_detect():
         content=detection_content,  # 检测内容
         file_path=None,  # 文件路径（文本检测时为 None）
         detection_result=detection_result,  # 检测结果
-        detection_tool="模型"  # 检测工具（假设使用 model1）
+        detection_tool="FBSD"  # 检测工具
     )
 
     return jsonify({
@@ -161,7 +161,7 @@ def file_detect():
         content=content,  # 检测内容
         file_path=save_path,  # 文件路径
         detection_result=detection_result,  # 检测结果
-        detection_tool="model1"  # 检测工具（假设使用 model1）
+        detection_tool="FBSD"  # 检测工具（假设使用 model1）
     )
 
     return jsonify({

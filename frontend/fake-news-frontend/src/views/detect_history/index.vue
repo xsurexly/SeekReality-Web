@@ -48,7 +48,8 @@
           >
             <el-option label="全部" value="" />
             <el-option label="AI助手" value="analysis" />
-            <el-option label="模型检测" value="model" />
+            <el-option label="MMFN" value="MMFN" />
+            <el-option label="FBSD" value="FBSD" />
           </el-select>
         </el-col>
         <el-col :span="4">
@@ -118,10 +119,10 @@
         <el-table-column prop="detection_mode" label="检测方式" width="120" align="center">
           <template #default="scope">
             <el-tag
-              :type="scope.row.detection_mode === 'analysis' ? 'primary' : 'success'"
+              :type="getDetectionModeType(scope.row)"
               effect="light"
             >
-              {{ scope.row.detection_mode === 'analysis' ? 'AI助手' : '模型检测' }}
+              {{ getDetectionModeLabel(scope.row) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -178,44 +179,37 @@
 
     <!-- 详情弹窗 -->
     <el-dialog
-      v-model="detailDialogVisible"
-      title="检测详情"
-      width="60%"
-      class="detail-dialog"
-    >
+  v-model="detailDialogVisible"
+  title="检测详情"
+  width="60%"
+  class="detail-dialog"
+>
   <div v-if="selectedRecord" class="report-container">
-    <!-- 报告头部 -->
     <div class="report-header">
       <h1>新闻真实性分析报告</h1>
       <p>生成时间：{{ new Date().toLocaleString() }}</p>
     </div>
-    <!-- 报告主体 -->
     <div class="report-content">
-      <!-- 评分区 -->
       <div class="score-section">
         <div class="score-content">
           <span class="score-label">真实性评分：</span>
-          <span class="score">{{ selectedRecord.score }}</span>
+          <span class="score">{{ selectedRecord.history.score }}</span>
           <span class="score-unit">分</span>
         </div>
       </div>
-      <!-- 详细分析 -->
       <div class="analysis-block">
         <div class="section-title">详细分析</div>
-        <div class="analysis-item" v-html="formatDetail(selectedRecord.detailed_analysis)"></div>
+        <div class="analysis-item" v-html="formatDetail(selectedRecord.report.detailed_analysis)"></div>
       </div>
-      <!-- 相关事实依据 -->
       <div class="evidence-block">
         <div class="section-title">相关事实依据</div>
-        <div class="analysis-item" v-html="formatDetail(selectedRecord.evidence)"></div>
+        <div class="analysis-item" v-html="formatDetail(selectedRecord.report.evidence)"></div>
       </div>
-      <!-- 总结 -->
       <div class="summary-block">
         <div class="section-title">总结</div>
-        <div class="summary-content" v-html="formatDetail(selectedRecord.summary)"></div>
+        <div class="summary-content" v-html="formatDetail(selectedRecord.report.summary)"></div>
       </div>
     </div>
-    <!-- 报告底部 -->
     <div class="footer">
       <p>由AI助手生成的新闻真实性分析报告</p>
       <el-button type="primary" @click="exportReport">导出报告</el-button>
@@ -273,7 +267,9 @@ export default {
       const filtered = records.value.filter(record => {
         const matchKeyword = !searchKeyword.value ||
           record.content.toLowerCase().includes(searchKeyword.value.toLowerCase())
-        const matchMode = !detectionMode.value || record.detection_mode === detectionMode.value
+        const matchMode = !detectionMode.value ||
+          (record.detection_mode === detectionMode.value ||
+           record.detection_tool === detectionMode.value)
         const matchResult = !resultFilter.value ||
           (resultFilter.value === 'true' ? record.result : !record.result)
         const matchDate = !dateRange.value || !dateRange.value.length ||
@@ -322,10 +318,18 @@ export default {
     }
 
     // 查看详情
-    const viewDetail = (record) => {
-      selectedRecord.value = record
-      detailDialogVisible.value = true
+const viewDetail = async (record) => {
+    try {
+        const response = await axios.get(`/apis/history/detection-records/${record.id}`);
+        if (response.data && response.data.data) {
+            selectedRecord.value = response.data.data; // 存储历史记录和报告
+            detailDialogVisible.value = true;
+        }
+    } catch (error) {
+        console.error('获取记录详情失败:', error);
+        ElMessage.error('获取记录详情失败');
     }
+}
 
     // 删除记录
     const deleteRecord = async (record) => {
@@ -481,6 +485,30 @@ export default {
       window.URL.revokeObjectURL(url)
     }
 
+    // 获取检测方式标签
+    const getDetectionModeLabel = (record) => {
+      if (record.detection_mode === 'analysis') {
+        return 'AI助手'
+      } else if (record.detection_tool === 'MMFN') {
+        return 'MMFN'
+      } else if (record.detection_tool === 'FBSD') {
+        return 'FBSD'
+      }
+      return '未知'
+    }
+
+    // 获取检测方式标签类型
+    const getDetectionModeType = (record) => {
+      if (record.detection_mode === 'analysis') {
+        return 'primary'
+      } else if (record.detection_tool === 'MMFN') {
+        return 'success'
+      } else if (record.detection_tool === 'FBSD') {
+        return 'warning'
+      }
+      return 'info'
+    }
+
     onMounted(() => {
       fetchRecords()
     })
@@ -511,6 +539,8 @@ export default {
       Search,
       formatDetail,
       exportReport,
+      getDetectionModeLabel,
+      getDetectionModeType,
     }
   }
 }

@@ -11,8 +11,9 @@ from routes.aihelper import aihelper_bp
 from routes.newsget import news_bp
 from routes.read_history import read_history_bp
 from routes.visualization import visualization_bp
-from routes.overviewbp.cache_manager import CacheManager
+from backend.routes.overviewbp.cache_manager import CacheManager
 from routes.news_crawler import news_crawler_bp, init_scheduler
+from routes.multidetect import multidetect_bp
 from routes.android import android_bp
 
 # 创建 Flask 应用
@@ -37,17 +38,17 @@ app.register_blueprint(news_bp, url_prefix='/news')
 app.register_blueprint(read_history_bp, url_prefix='/readhistory')
 app.register_blueprint(visualization_bp, url_prefix='/visualization')
 app.register_blueprint(news_crawler_bp, url_prefix='/news_crawler')
+app.register_blueprint(multidetect_bp, url_prefix='/multidetect')
 app.register_blueprint(android_bp, url_prefix='/android')
-
 # 添加静态文件服务路由
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return send_from_directory(app.static_folder, filename)
 
-
 # 初始化缓存管理器
 cache_manager = CacheManager()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',debug=True, use_reloader=False)
-
+    import os
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug_mode)

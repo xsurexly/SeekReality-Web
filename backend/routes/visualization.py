@@ -15,9 +15,17 @@ visualization_bp = Blueprint('visualization', __name__)
 cache_manager = CacheManager()
 vis_manager = VisualizationManager()
 
+# 数据缓存
+_database_cache = None
+
 
 # 初始化数据库信息
 def initialize_database():
+    global _database_cache
+
+    if _database_cache is not None:
+        return _database_cache
+
     try:
         print("Loading database...")
         (
@@ -35,9 +43,20 @@ def initialize_database():
         ) = GetData("../backend/routes/overviewdb/database").creat()
 
         print("Creating data copies...")
-        return copy.deepcopy(ori_data), copy.deepcopy(time), copy.deepcopy(influence), copy.deepcopy(
-            users_info), copy.deepcopy(forward_info), copy.deepcopy(forward_users_info), copy.deepcopy(
-            emotion), copy.deepcopy(topic), copy.deepcopy(commentusers), copy.deepcopy(fc2020), copy.deepcopy(fcemotion)
+        _database_cache = (
+            copy.deepcopy(ori_data),
+            copy.deepcopy(time),
+            copy.deepcopy(influence),
+            copy.deepcopy(users_info),
+            copy.deepcopy(forward_info),
+            copy.deepcopy(forward_users_info),
+            copy.deepcopy(emotion),
+            copy.deepcopy(topic),
+            copy.deepcopy(commentusers),
+            copy.deepcopy(fc2020),
+            copy.deepcopy(fcemotion)
+        )
+        return _database_cache
 
     except Exception as e:
         import traceback

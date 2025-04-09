@@ -3,7 +3,7 @@ import json
 from flask import Blueprint, request, jsonify
 from datetime import datetime
 import logging
-from models import db, DetectionHistory, Record, Conversation
+from models import db, DetectionHistory, Record, Conversation,ModelDetectionReport
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -122,23 +122,33 @@ def get_detection_records():
 def delete_detection_record(record_id):
     """删除指定的检测记录"""
     try:
-        # 查找记录
+        # 首先尝试查找 Record 表中的记录
         record = Record.query.get(record_id)
-        if not record:
-            return jsonify({'error': '记录不存在'}), 404
+        
+        if record:
+            # 删除关联的对话记录（如果存在）
+            if record.conversation_id:
+                conversation = Conversation.query.get(record.conversation_id)
+                if conversation:
+                    db.session.delete(conversation)
 
-        # 删除关联的对话记录（如果存在）
-        if record.conversation_id:
-            conversation = Conversation.query.get(record.conversation_id)
-            if conversation:
-                db.session.delete(conversation)
-
-        # 删除记录
-        db.session.delete(record)
-        db.session.commit()
-
-        logger.info(f'成功删除记录 ID: {record_id}')
-        return jsonify({'message': '记录已成功删除'}), 200
+            # 删除记录
+            db.session.delete(record)
+            db.session.commit()
+            logger.info(f'成功删除 Record 记录 ID: {record_id}')
+            return jsonify({'message': '记录已成功删除'}), 200
+        
+        # 如果 Record 表中没有找到，尝试查找 DetectionHistory 表中的记录
+        detection_record = DetectionHistory.query.get(record_id)
+        if detection_record:
+            # 删除记录
+            db.session.delete(detection_record)
+            db.session.commit()
+            logger.info(f'成功删除 DetectionHistory 记录 ID: {record_id}')
+            return jsonify({'message': '记录已成功删除'}), 200
+        
+        # 如果两个表中都没有找到记录
+        return jsonify({'error': '记录不存在'}), 404
 
     except Exception as e:
         logger.error(f'删除记录失败: {str(e)}')
@@ -168,3 +178,52 @@ def get_old_history():
     ]
 
     return jsonify({'success': True, 'history': result}) 
+
+@detection_history_bp.route('/detection-records/<int:record_id>', methods=['GET'])
+def get_detection_record(record_id):
+    """获取检测记录的详细信息，包括DetectionHistory和ModelDetectionReport"""
+    try:
+        history_record = DetectionHistory.query.get(record_id)
+        if not history_record:
+            return jsonify({"status": "error", "message": "记录未找到"}), 404
+
+        report_record = ModelDetectionReport.query.filter_by(detection_history_id=record_id).first()
+
+        # 将记录转换为字典
+        history_data = {
+            "id": history_record.id,
+            "userid": history_record.userid,
+            "detection_type": history_record.detection_type,
+            "content": history_record.content,
+            "file_path": history_record.file_path,
+            "result": history_record.result,
+            "detection_tool": history_record.detection_tool,
+            "score": history_record.score,
+            "created_at": history_record.created_at.isoformat()  # 转换为ISO格式字符串
+        }
+
+        report_data = None
+        if report_record:
+            report_data = {
+                "detection_history_id": report_record.detection_history_id,
+                "userid": report_record.userid,
+                "detection_type": report_record.detection_type,
+                "detection_tool": report_record.detection_tool,
+                "content": report_record.content,
+                "score": report_record.score,
+                "result": report_record.result,
+                "confidence": report_record.confidence,
+                "detailed_analysis": report_record.detailed_analysis,
+                "evidence": report_record.evidence,
+                "summary": report_record.summary
+            }
+
+        response_data = {
+            "history": history_data,
+            "report": report_data
+        }
+        return jsonify({"status": "success", "data": response_data}), 200
+
+    except Exception as e:
+        logger.error(f'获取检测记录详情时发生错误: {str(e)}')
+        return jsonify({"status": "error", "message": "获取记录详情失败"}), 500

@@ -30,7 +30,7 @@ class DetectionHistory(db.Model):
     file_path = db.Column(db.String(255), nullable=True)  # File path for uploaded files
     result = db.Column(db.SmallInteger, nullable=False)  # Detection result (0 for true, 1 for false)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # Time of detection
-    detection_tool = db.Column(db.String(50), nullable=False)  # "ai" or "模型"
+    detection_tool = db.Column(db.String(50), nullable=False)# "FBDS" or "MMFN"or "ai"
     score = db.Column(db.Integer)  # Confidence score
 
     def to_dict(self):
@@ -48,6 +48,46 @@ class DetectionHistory(db.Model):
             'detailed_analysis': None,
             'evidence': None,
             'summary': None,
+        }
+
+
+class ModelDetectionReport(db.Model):
+    """模型检测的AI报告详情表"""
+    __tablename__ = 'model_detection_reports'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    detection_history_id = db.Column(db.Integer, db.ForeignKey('detection_history.id', ondelete='CASCADE'), nullable=False)
+    userid = db.Column(db.String(50), nullable=False)
+    detection_type = db.Column(db.String(50), nullable=False)  # "text" or "file"
+    detection_tool = db.Column(db.String(50), nullable=False)  # "FBDS" or "MMFN"
+    content = db.Column(db.Text, nullable=True)  # 检测的新闻内容
+    score = db.Column(db.Integer)  # 真实性评分
+    result = db.Column(db.Boolean)  # True为真实，False为虚假
+    confidence = db.Column(db.Float)  # 置信度
+    detailed_analysis = db.Column(db.Text)  # 详细分析
+    evidence = db.Column(db.Text)  # 相关事实依据
+    summary = db.Column(db.Text)  # 总结
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # 关联关系
+    detection_history = db.relationship('DetectionHistory', backref=db.backref('ai_reports', lazy=True))
+
+    def to_dict(self):
+        """转换为字典格式"""
+        return {
+            'id': self.id,
+            'detection_history_id': self.detection_history_id,
+            'userid': self.userid,
+            'detection_type': self.detection_type,
+            'detection_tool': self.detection_tool,
+            'content': self.content,
+            'score': self.score,
+            'result': self.result,
+            'confidence': self.confidence,
+            'detailed_analysis': self.detailed_analysis,
+            'evidence': self.evidence,
+            'summary': self.summary,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
 
